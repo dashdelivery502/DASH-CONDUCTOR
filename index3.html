@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transportes y Logística Villalobos - Control Operativo</title>
+    <!-- Leaflet CSS para el mapa -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #059669;
+            --primary-dark: #047857;
+            --secondary: #0f172a;
+            --accent: #f59e0b;
+            --bg-light: #f1f5f9;
+            --text-main: #1e293b;
+            --white: #ffffff;
+            --danger: #ef4444;
+            --info: #0284c7;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-light);
+            color: var(--text-main);
+            min-height: 100vh;
+        }
+
+        /* PORTAL DE INICIO Y LOGIN */
+        .portal-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            color: var(--white);
+        }
+
+        .portal-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+
+        .portal-header h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-top: 10px;
+        }
+
+        .portal-header p {
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
+
+        .roles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            width: 100%;
+            max-width: 700px;
+        }
+
+        .role-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .role-card:hover {
+            transform: translateY(-5px);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--primary);
+        }
+
+        .role-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .role-card h2 {
+            font-size: 1.2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .role-card p {
+            font-size: 0.85rem;
+            color: #cbd5e1;
+        }
+
+        /* HEADER APP LOGUEADA */
+        .app-header {
+            background-color: var(--secondary);
+            color: var(--white);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-badge {
+            background: rgba(255,255,255,0.1);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        /* BOTONES */
+        .btn {
+            padding: 0.6rem 1.2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-primary { background-color: var(--primary); color: var(--white); }
+        .btn-primary:hover { background-color: var(--primary-dark); }
+        .btn-danger { background-color: var(--danger); color: var(--white); }
+        .btn-info { background-color: var(--info); color: var(--white); }
+        .btn-block { width: 100%; }
+
+        /* ESTRUCTURA GENERAL */
+        .main-container {
+            padding: 1.5rem 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+
+        /* KPIS GESTOR */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .kpi-card {
+            background: var(--white);
+            padding: 1rem;
+            border-radius: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border-left: 4px solid var(--secondary);
+        }
+
+        .kpi-card h3 { font-size: 0.8rem; color: #64748b; margin-bottom: 0.3rem; }
+        .kpi-card p { font-size: 1.4rem; font-weight: 700; color: var(--secondary); }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .dashboard-grid { grid-template-columns: 1fr; }
+            .app-header { flex-direction: column; gap: 10px; text-align: center; }
+        }
+
+        .card {
+            background: var(--white);
+            padding: 1.2rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .card h2 { font-size: 1.1rem; margin-bottom: 1rem; color: var(--secondary); }
+
+        #map { width: 100%; height: 380px; border-radius: 8px; }
+
+        /* TABLAS Y BADGES */
+        .table-responsive { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
+        th, td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
+        th { background: #f8fafc; color: #475569; font-weight: 600; }
+
+        .badge {
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-pendiente { background: #fee2e2; color: #dc2626; }
+        .badge-aceptado { background: #fef3c7; color: #d97706; }
+        .badge-en-ruta { background: #e0f2fe; color: #0284c7; }
+        .badge-entregado { background: #d1fae5; color: #059669; }
+
+        /* TARJETAS CONDUCTOR */
+        .driver-orders-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 1.2rem;
+        }
+
+        .driver-card {
+            background: var(--white);
+            border-radius: 12px;
+            padding: 1.2rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            border-top: 5px solid var(--primary);
+        }
+
+        .driver-card h3 { font-size: 1.1rem; color: var(--secondary); margin-bottom: 8px; }
+        .driver-card p { font-size: 0.9rem; margin-bottom: 5px; color: #475569; }
+
+        .cobro-box {
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+
+        /* MODALES */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6);
+            align-items: center; justify-content: center;
+        }
+
+        .modal-content {
+            background: var(--white);
+            padding: 1.8rem;
+            border-radius: 12px;
+            width: 90%; max-width: 520px;
+            position: relative;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .close { position: absolute; right: 1rem; top: 0.8rem; font-size: 1.5rem; cursor: pointer; color: #94a3b8; }
+        .form-group { margin-bottom: 0.9rem; }
+        .form-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.3rem; }
+        .form-group input, .form-group select { width: 100%; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    </style>
+</head>
+<body>
+
+    <!-- PANTALLA 1: SELECCIÓN DE ACCESO -->
+    <div id="portalView" class="portal-container">
+        <div class="portal-header">
+            <span style="font-size: 3rem;">🚚</span>
+            <h1>Transportes y Logística Villalobos</h1>
+            <p>Sistema de Control Operativo de Envíos</p>
+        </div>
+
+        <div class="roles-grid">
+            <div class="role-card" onclick="openLoginModal('gestor')">
+                <div class="role-icon">🖥️</div>
+                <h2>Modo Gestor de Rutas</h2>
+                <p>Armar órdenes, asignaciones, mapa en tiempo real y cuentas de cobro.</p>
+            </div>
+
+            <div class="role-card" onclick="openLoginModal('conductor')">
+                <div class="role-icon">📱</div>
+                <h2>Modo Conductor</h2>
+                <p>Acceso individual de repartidores para consultar y realizar entregas.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL PIN DE ACCESO -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content" style="max-width: 400px;">
+            <span class="close" onclick="closeLoginModal()">&times;</span>
+            <h2 id="loginModalTitle" style="margin-bottom: 0.5rem; font-size: 1.2rem; color: #0f172a;">Ingresar PIN de Acceso</h2>
+            <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 1rem;">Ingresa tu código personal para ingresar.</p>
+            
+            <form onsubmit="verifyPin(event)">
+                <div id="driverSelectGroup" class="form-group" style="display: none;">
+                    <label>Selecciona tu Nombre:</label>
+                    <select id="loginDriverName">
+                        <option value="Carlos Villalobos">Carlos Villalobos (Pulsar 150)</option>
+                        <option value="Nelson Pérez">Nelson Pérez (Rowor F100)</option>
+                        <option value="José Morales">José Morales (Moto Local)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Contraseña / PIN</label>
+                    <input type="password" id="pinInput" required placeholder="Ingresa PIN" autofocus>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" style="margin-top: 10px;">Ingresar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- APP PRINCIPAL -->
+    <div id="appHeader" class="app-header" style="display: none;">
+        <div class="logo-container">
+            <span style="font-size: 1.8rem;">🚚</span>
+            <div>
+                <h1 style="font-size: 1.1rem;">Transportes y Logística Villalobos</h1>
+                <p style="font-size: 0.75rem; color: #94a3b8;">Sistema de Despacho Operativo</p>
+            </div>
+        </div>
+        <div class="header-user-info">
+            <span id="userRoleBadge" class="user-badge">Sesión: Gestor</span>
+            <button class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;" onclick="logout()">🔒 Salir</button>
+        </div>
+    </div>
+
+    <main class="main-container">
+        <!-- VISTA GESTOR -->
+        <div id="gestorSection" class="view-section">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                <h2>Panel de Despacho y Operaciones</h2>
+                <button class="btn btn-primary" onclick="openOrderModal()">+ Crear Nueva Orden</button>
+            </div>
+
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <h3>Total Envíos</h3>
+                    <p id="kpiTotal">0</p>
+                </div>
+                <div class="kpi-card">
+                    <h3>Pendientes Aceptar</h3>
+                    <p id="kpiPendientes">0</p>
+                </div>
+                <div class="kpi-card">
+                    <h3>En Ruta</h3>
+                    <p id="kpiEnRuta">0</p>
+                </div>
+                <div class="kpi-card" style="border-left-color: var(--primary);">
+                    <h3>Efectivo Recaudado</h3>
+                    <p id="kpiEfectivo">Q0.00</p>
+                </div>
+                <div class="kpi-card" style="border-left-color: var(--accent);">
+                    <h3>Por Cobrar a Restaurante</h3>
+                    <p id="kpiRestaurantes">Q0.00</p>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="card">
+                    <h2>🗺️ Monitoreo de Flota en Tiempo Real</h2>
+                    <div id="map"></div>
+                </div>
+                <div class="card">
+                    <h2>📦 Control de Envíos Armados</h2>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID / Cliente</th>
+                                    <th>Detalle / Origen</th>
+                                    <th>Conductor</th>
+                                    <th>Cobro Cliente</th>
+                                    <th>Estado</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersTableBody">
+                                <!-- Dinámico -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VISTA CONDUCTOR -->
+        <div id="conductorSection" class="view-section">
+            <div class="card" style="margin-bottom: 1.5rem;">
+                <h2 style="margin: 0;" id="conductorWelcomeTitle">Mis Rutas Asignadas</h2>
+                <p style="font-size: 0.85rem; color: #64748b; margin-top: 4px;">Envíos asignados a tu perfil:</p>
+            </div>
+
+            <div id="conductorOrdersContainer" class="driver-orders-grid">
+                <!-- Tarjetas dinámicas -->
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL CREAR ORDEN (GESTOR) -->
+    <div id="orderModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeOrderModal()">&times;</span>
+            <h2 style="margin-bottom: 1rem; font-size: 1.2rem;">Armar Orden para Conductor</h2>
+            <form id="orderForm" onsubmit="saveOrder(event)">
+                <div class="form-group">
+                    <label>Cliente Final</label>
+                    <input type="text" id="clientName" required placeholder="Ej. Pedro Villanueva">
+                </div>
+                <div class="form-group">
+                    <label>Dirección de Entrega</label>
+                    <input type="text" id="clientAddress" required placeholder="Ej. Barrio El Estadio, portón negro">
+                </div>
+                <div class="form-group">
+                    <label>Restaurante / Comercio Origen</label>
+                    <input type="text" id="restaurantName" required placeholder="Ej. Taquero Mucho">
+                </div>
+                <div class="form-group">
+                    <label>¿Qué contenido lleva?</label>
+                    <input type="text" id="orderDescription" required placeholder="Ej. Mega Birria">
+                </div>
+
+                <!-- PRECIOS Y DETALLES DE COBRO -->
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Precio Producto/Comida (Q)</label>
+                        <input type="number" step="0.01" id="productPrice" value="50.00" required placeholder="0.00">
+                    </div>
+                    <div class="form-group">
+                        <label>¿Cobrar Producto en Destino?</label>
+                        <select id="productCollect">
+                            <option value="si">Sí: Cobrar Producto al Cliente</option>
+                            <option value="no">No: Producto Ya Pagado</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Precio Flete/Envío (Q)</label>
+                        <input type="number" step="0.01" id="shippingPrice" value="20.00" required>
+                    </div>
+                    <div class="form-group">
+                        <label>¿Quién paga el flete?</label>
+                        <select id="shippingPayer">
+                            <option value="cliente">Cliente Final</option>
+                            <option value="restaurante">Restaurante (Gratis al Cliente)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Asignar Conductor</label>
+                    <select id="assignedDriver">
+                        <option value="Carlos Villalobos">Carlos Villalobos (Pulsar 150)</option>
+                        <option value="Nelson Pérez">Nelson Pérez (Rowor F100)</option>
+                        <option value="José Morales">José Morales (Moto Local)</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary btn-block" style="margin-top: 10px;">Enviar Orden al Conductor</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        const PIN_GESTOR = "1234";
+        const DRIVER_PINS = {
+            "Carlos Villalobos": "1010",
+            "Nelson Pérez": "2020",
+            "José Morales": "3030"
+        };
+
+        let pendingRole = null;
+        let activeRole = null;
+        let loggedDriverName = null;
+        let map = null;
+        let markers = {};
+        let watchId = null;
+
+        // Base de datos local de conductores (ubicación y estado en tiempo real)
+        let driversLocation = JSON.parse(localStorage.getItem('villalobos_drivers_loc')) || {
+            "Carlos Villalobos": { lat: 14.3333, lng: -90.1583, status: "En espera" },
+            "Nelson Pérez": { lat: 14.3340, lng: -90.1590, status: "En espera" },
+            "José Morales": { lat: 14.3320, lng: -90.1570, status: "En espera" }
+        };
+
+        let orders = JSON.parse(localStorage.getItem('villalobos_v5_orders')) || [
+            {
+                id: 101,
+                client: "Pedro Villanueva",
+                address: "Barrio El Estadio, portón negro",
+                restaurant: "Taquero Mucho",
+                description: "Mega Birria",
+                productPrice: 65.00,
+                productCollect: "si",
+                shippingPrice: 15.00,
+                payer: "restaurante", 
+                driver: "José Morales",
+                status: "Pendiente",
+                km: 0
+            }
+        ];
+
+        function openLoginModal(role) {
+            pendingRole = role;
+            document.getElementById('loginModalTitle').textContent = `Acceso - Modo ${role === 'gestor' ? 'Gestor de Rutas' : 'Conductor'}`;
+            document.getElementById('pinInput').value = '';
+
+            const driverGroup = document.getElementById('driverSelectGroup');
+            if (role === 'conductor') {
+                driverGroup.style.display = 'block';
+            } else {
+                driverGroup.style.display = 'none';
+            }
+
+            document.getElementById('loginModal').style.display = 'flex';
+            document.getElementById('pinInput').focus();
+        }
+
+        function closeLoginModal() {
+            document.getElementById('loginModal').style.display = 'none';
+            pendingRole = null;
+        }
+
+        function verifyPin(e) {
+            e.preventDefault();
+            let enteredPin = document.getElementById('pinInput').value;
+
+            if (pendingRole === 'gestor') {
+                if (enteredPin === PIN_GESTOR) {
+                    closeLoginModal();
+                    startSession('gestor');
+                } else {
+                    alert('❌ PIN de Gestor incorrecto.');
+                }
+            } else if (pendingRole === 'conductor') {
+                let selectedDriver = document.getElementById('loginDriverName').value;
+                let expectedPin = DRIVER_PINS[selectedDriver];
+
+                if (enteredPin === expectedPin) {
+                    loggedDriverName = selectedDriver;
+                    closeLoginModal();
+                    startSession('conductor');
+                } else {
+                    alert(`❌ PIN incorrecto para ${selectedDriver}.`);
+                }
+            }
+        }
+
+        function startSession(role) {
+            activeRole = role;
+            document.getElementById('portalView').style.display = 'none';
+            document.getElementById('appHeader').style.display = 'flex';
+
+            // Activar GPS del dispositivo en tiempo real
+            startLocationTracking();
+
+            if (role === 'gestor') {
+                document.getElementById('userRoleBadge').textContent = 'Sesión: Gestor 🖥️';
+                document.getElementById('gestorSection').classList.add('active');
+                document.getElementById('conductorSection').classList.remove('active');
+                
+                setTimeout(() => {
+                    initMap();
+                    updateGestorView();
+                }, 100);
+            } else {
+                document.getElementById('userRoleBadge').textContent = `Conductor: ${loggedDriverName} 📱`;
+                document.getElementById('conductorWelcomeTitle').textContent = `Rutas de ${loggedDriverName}`;
+                document.getElementById('conductorSection').classList.add('active');
+                document.getElementById('gestorSection').classList.remove('active');
+                renderConductorOrders();
+            }
+        }
+
+        // RASTREO GPS AUTOMÁTICO
+        function startLocationTracking() {
+            if ("geolocation" in navigator) {
+                watchId = navigator.geolocation.watchPosition(
+                    (position) => {
+                        let lat = position.coords.latitude;
+                        let lng = position.coords.longitude;
+
+                        if (activeRole === 'conductor' && loggedDriverName) {
+                            if (driversLocation[loggedDriverName]) {
+                                driversLocation[loggedDriverName].lat = lat;
+                                driversLocation[loggedDriverName].lng = lng;
+                                saveDriversLoc();
+                            }
+                        }
+                    },
+                    (error) => {
+                        console.warn("Aviso de GPS: No se pudo obtener la ubicación automática.", error);
+                    },
+                    { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+                );
+            }
+        }
+
+        function logout() {
+            if (watchId !== null && "geolocation" in navigator) {
+                navigator.geolocation.clearWatch(watchId);
+            }
+            activeRole = null;
+            loggedDriverName = null;
+            document.getElementById('portalView').style.display = 'flex';
+            document.getElementById('appHeader').style.display = 'none';
+            document.getElementById('gestorSection').classList.remove('active');
+            document.getElementById('conductorSection').classList.remove('active');
+        }
+
+        function initMap() {
+            if (!map) {
+                map = L.map('map').setView([14.3333, -90.1583], 14);
+                
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+                    maxZoom: 19,
+                    attribution: 'Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS'
+                }).addTo(map);
+
+                L.marker([14.3333, -90.1583]).addTo(map).bindPopup("<b>Base Transportes Villalobos</b>");
+            }
+            map.invalidateSize();
+            updateMapMarkers();
+        }
+
+        function updateMapMarkers() {
+            if (!map) return;
+            for (let name in markers) { map.removeLayer(markers[name]); }
+            markers = {};
+
+            // Recargar ubicaciones actualizadas desde localStorage (sincroniza con los celulares de los motoristas)
+            driversLocation = JSON.parse(localStorage.getItem('villalobos_drivers_loc')) || driversLocation;
+
+            for (let driverName in driversLocation) {
+                let info = driversLocation[driverName];
+                let isRuta = info.status === 'En ruta';
+                let badgeColor = isRuta ? '#059669' : '#f59e0b'; // Verde si en ruta, Naranja si en espera
+                let shortName = driverName.split(' ')[0];
+
+                let icon = L.divIcon({
+                    className: 'custom-icon',
+                    html: `<div style="background:${badgeColor}; color:white; padding:4px 8px; border-radius:12px; font-weight:bold; font-size:11px; box-shadow:0 2px 4px rgba(0,0,0,0.3); white-space: nowrap;">🛵 ${shortName}: ${info.status}</div>`
+                });
+
+                markers[driverName] = L.marker([info.lat, info.lng], { icon: icon }).addTo(map)
+                    .bindPopup(`<b>Conductor:</b> ${driverName}<br><b>Estado:</b> ${info.status}`);
+            }
+        }
+
+        function openOrderModal() { document.getElementById('orderModal').style.display = 'flex'; }
+        function closeOrderModal() { document.getElementById('orderModal').style.display = 'none'; }
+
+        function saveOrder(e) {
+            e.preventDefault();
+            let newOrder = {
+                id: Date.now().toString().slice(-4),
+                client: document.getElementById('clientName').value,
+                address: document.getElementById('clientAddress').value,
+                restaurant: document.getElementById('restaurantName').value,
+                description: document.getElementById('orderDescription').value,
+                productPrice: parseFloat(document.getElementById('productPrice').value) || 0,
+                productCollect: document.getElementById('productCollect').value,
+                shippingPrice: parseFloat(document.getElementById('shippingPrice').value) || 0,
+                payer: document.getElementById('shippingPayer').value,
+                driver: document.getElementById('assignedDriver').value,
+                status: 'Pendiente',
+                km: 0
+            };
+
+            orders.push(newOrder);
+            saveData();
+            closeOrderModal();
+            document.getElementById('orderForm').reset();
+            updateGestorView();
+            alert(`✅ Orden #${newOrder.id} enviada correctamente a ${newOrder.driver}`);
+        }
+
+        function updateGestorView() {
+            document.getElementById('kpiTotal').textContent = orders.length;
+            document.getElementById('kpiPendientes').textContent = orders.filter(o => o.status === 'Pendiente').length;
+            document.getElementById('kpiEnRuta').textContent = orders.filter(o => o.status === 'En Ruta').length;
+
+            let efectivo = 0;
+            let restaurantes = 0;
+
+            orders.forEach(o => {
+                if (o.status === 'Entregado') {
+                    let cobroProd = o.productCollect === 'si' ? o.productPrice : 0;
+                    let cobroFlete = o.payer === 'cliente' ? o.shippingPrice : 0;
+                    efectivo += (cobroProd + cobroFlete);
+
+                    if (o.payer === 'restaurante') {
+                        restaurantes += o.shippingPrice;
+                    }
+                }
+            });
+
+            document.getElementById('kpiEfectivo').textContent = `Q${efectivo.toFixed(2)}`;
+            document.getElementById('kpiRestaurantes').textContent = `Q${restaurantes.toFixed(2)}`;
+
+            let tbody = document.getElementById('ordersTableBody');
+            tbody.innerHTML = '';
+
+            orders.slice().reverse().forEach(o => {
+                let badgeClass = 'badge-pendiente';
+                if (o.status === 'Aceptado') badgeClass = 'badge-aceptado';
+                if (o.status === 'En Ruta') badgeClass = 'badge-en-ruta';
+                if (o.status === 'Entregado') badgeClass = 'badge-entregado';
+
+                let prodACobrar = o.productCollect === 'si' ? o.productPrice : 0;
+                let fleteACobrar = o.payer === 'cliente' ? o.shippingPrice : 0;
+                let totalCliente = prodACobrar + fleteACobrar;
+
+                let tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><b>#${o.id}</b><br><small>${o.client}</small></td>
+                    <td><b>${o.restaurant}</b><br><small>${o.description}</small></td>
+                    <td>${o.driver}</td>
+                    <td><b>Q${totalCliente.toFixed(2)}</b><br><small>${o.payer === 'restaurante' ? 'Flete Gratis (Paga Rest.)' : 'Flete Paga Cliente'}</small></td>
+                    <td><span class="badge ${badgeClass}">${o.status}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            updateMapMarkers();
+        }
+
+        function renderConductorOrders() {
+            let container = document.getElementById('conductorOrdersContainer');
+            container.innerHTML = '';
+
+            let driverOrders = orders.filter(o => o.driver === loggedDriverName && o.status !== 'Entregado');
+
+            if (driverOrders.length === 0) {
+                container.innerHTML = `<div class="card" style="grid-column: 1/-1; text-align:center; padding: 2rem;"><p>No tienes órdenes pendientes asignadas en este momento. 👍</p></div>`;
+                return;
+            }
+
+            driverOrders.forEach(o => {
+                let cobroProducto = o.productCollect === 'si' ? o.productPrice : 0;
+                let cobroFlete = o.payer === 'cliente' ? o.shippingPrice : 0;
+                let totalACobrar = cobroProducto + cobroFlete;
+
+                let fleteDetalle = o.payer === 'cliente'
+                    ? `Q${o.shippingPrice.toFixed(2)}`
+                    : `Q0.00 (Envío Gratis - Paga Restaurante)`;
+
+                let productoDetalle = o.productCollect === 'si'
+                    ? `Q${o.productPrice.toFixed(2)}`
+                    : `Q0.00 (Ya Pagado Previamente)`;
+
+                let actionBtn = '';
+                if (o.status === 'Pendiente') {
+                    actionBtn = `<button class="btn btn-primary btn-block" onclick="updateOrderStatus(${o.id}, 'Aceptado')">✋ Aceptar Orden</button>`;
+                } else if (o.status === 'Aceptado') {
+                    actionBtn = `<button class="btn btn-info btn-block" onclick="updateOrderStatus(${o.id}, 'En Ruta')">▶️ Comenzar Reparto</button>`;
+                } else if (o.status === 'En Ruta') {
+                    actionBtn = `<button class="btn btn-danger btn-block" onclick="updateOrderStatus(${o.id}, 'Entregado')">🏁 Ruta Terminada / Entregado</button>`;
+                }
+
+                let card = document.createElement('div');
+                card.className = 'driver-card';
+                card.innerHTML = `
+                    <h3>Orden #${o.id} - ${o.restaurant}</h3>
+                    <p><b>Cliente:</b> ${o.client}</p>
+                    <p><b>Dirección:</b> ${o.address}</p>
+                    <p><b>Llevar:</b> ${o.description}</p>
+                    
+                    <div class="cobro-box">
+                        <p style="font-size:0.8rem; color:#64748b; margin-bottom:2px;">💵 <b>DETALLE DE COBRO AL CLIENTE:</b></p>
+                        <p style="font-size:0.85rem;">• Comida/Producto: <b>${productoDetalle}</b></p>
+                        <p style="font-size:0.85rem;">• Envío/Flete: <b>${fleteDetalle}</b></p>
+                        <hr style="margin: 6px 0; border:0; border-top:1px solid #cbd5e1;">
+                        <p style="font-size:1rem; color:#059669; font-weight:bold;">TOTAL A COBRAR: Q${totalACobrar.toFixed(2)}</p>
+                    </div>
+
+                    <div style="margin-top: 10px;">${actionBtn}</div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function updateOrderStatus(orderId, newStatus) {
+            let order = orders.find(o => o.id == orderId);
+            if (order) {
+                order.status = newStatus;
+                
+                // Actualizar el estado del conductor en el mapa
+                if (driversLocation[loggedDriverName]) {
+                    if (newStatus === 'En Ruta') {
+                        driversLocation[loggedDriverName].status = 'En ruta';
+                    } else if (newStatus === 'Entregado') {
+                        // Verificar si le quedan más órdenes activas
+                        let stillActive = orders.some(o => o.driver === loggedDriverName && (o.status === 'Aceptado' || o.status === 'En Ruta'));
+                        if (!stillActive) {
+                            driversLocation[loggedDriverName].status = 'En espera';
+                        }
+                        order.km = +(Math.random() * 5 + 2).toFixed(1);
+                    }
+                    saveDriversLoc();
+                }
+
+                saveData();
+                renderConductorOrders();
+                if (activeRole === 'gestor') updateGestorView();
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('villalobos_v5_orders', JSON.stringify(orders));
+        }
+
+        function saveDriversLoc() {
+            localStorage.setItem('villalobos_drivers_loc', JSON.stringify(driversLocation));
+        }
+
+        // Refrescar mapa automáticamente cada 4 segundos para ver movimientos de los celulares
+        setInterval(() => {
+            if (activeRole === 'gestor' && map) {
+                updateMapMarkers();
+            }
+        }, 4000);
+    </script>
+</body>
+</html>
