@@ -3,7 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transportes y Logística Villalobos - Control Operativo</title>
+    <title>Dash Delivery - Control Operativo</title>
+
+    <!-- Configuración PWA e Icono -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#059669">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3076/3076129.png">
+
     <!-- Leaflet CSS para el mapa -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <!-- Google Fonts -->
@@ -282,7 +290,7 @@
     <div id="portalView" class="portal-container">
         <div class="portal-header">
             <span style="font-size: 3rem;">🚚</span>
-            <h1>Transportes y Logística Villalobos</h1>
+            <h1>Dash Delivery</h1>
             <p>Sistema de Control Operativo de Envíos</p>
         </div>
 
@@ -331,7 +339,7 @@
         <div class="logo-container">
             <span style="font-size: 1.8rem;">🚚</span>
             <div>
-                <h1 style="font-size: 1.1rem;">Transportes y Logística Villalobos</h1>
+                <h1 style="font-size: 1.1rem;">Dash Delivery</h1>
                 <p style="font-size: 0.75rem; color: #94a3b8;">Sistema de Despacho Operativo</p>
             </div>
         </div>
@@ -435,7 +443,6 @@
                     <input type="text" id="orderDescription" required placeholder="Ej. Mega Birria">
                 </div>
 
-                <!-- PRECIOS Y DETALLES DE COBRO -->
                 <div class="form-row">
                     <div class="form-group">
                         <label>Precio Producto/Comida (Q)</label>
@@ -480,7 +487,29 @@
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+    <!-- SDKs de Firebase (Versión 8 compatible con Realtime Database) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
     <script>
+        // CONFIGURACIÓN DE FIREBASE CON TUS CREDENCIALES EXACTAS
+        const firebaseConfig = {
+            apiKey: "AIzaSyAhukqTLRw27k5fi2-Ngv-YxcsyXenl6lU",
+            authDomain: "dash-conductor.firebaseapp.com",
+            databaseURL: "https://dash-conductor-default-rtdb.firebaseio.com",
+            projectId: "dash-conductor",
+            storageBucket: "dash-conductor.firebasestorage.app",
+            messagingSenderId: "347161134844",
+            appId: "1:347161134844:web:41366a4c658899767df979",
+            measurementId: "G-20VPCG0KT8"
+        };
+
+        // Inicializar Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
+
         const PIN_GESTOR = "1234";
         const DRIVER_PINS = {
             "Carlos Villalobos": "1010",
@@ -495,29 +524,27 @@
         let markers = {};
         let watchId = null;
 
-        // Base de datos local de conductores (ubicación y estado en tiempo real)
-        let driversLocation = JSON.parse(localStorage.getItem('villalobos_drivers_loc')) || {
-            "Carlos Villalobos": { lat: 14.3333, lng: -90.1583, status: "En espera" },
-            "Nelson Pérez": { lat: 14.3340, lng: -90.1590, status: "En espera" },
-            "José Morales": { lat: 14.3320, lng: -90.1570, status: "En espera" }
-        };
+        let orders = [];
+        let driversLocation = {};
 
-        let orders = JSON.parse(localStorage.getItem('villalobos_v5_orders')) || [
-            {
-                id: 101,
-                client: "Pedro Villanueva",
-                address: "Barrio El Estadio, portón negro",
-                restaurant: "Taquero Mucho",
-                description: "Mega Birria",
-                productPrice: 65.00,
-                productCollect: "si",
-                shippingPrice: 15.00,
-                payer: "restaurante", 
-                driver: "José Morales",
-                status: "Pendiente",
-                km: 0
+        // Sincronizar órdenes en la nube en TIEMPO REAL
+        db.ref('orders').on('value', (snapshot) => {
+            const data = snapshot.val();
+            orders = [];
+            if (data) {
+                Object.keys(data).forEach(key => {
+                    orders.push({ firebaseId: key, ...data[key] });
+                });
             }
-        ];
+            if (activeRole === 'gestor') updateGestorView();
+            if (activeRole === 'conductor') renderConductorOrders();
+        });
+
+        // Sincronizar ubicaciones de motoristas en la nube
+        db.ref('driversLocation').on('value', (snapshot) => {
+            driversLocation = snapshot.val() || {};
+            if (activeRole === 'gestor' && map) updateMapMarkers();
+        });
 
         function openLoginModal(role) {
             pendingRole = role;
@@ -525,11 +552,7 @@
             document.getElementById('pinInput').value = '';
 
             const driverGroup = document.getElementById('driverSelectGroup');
-            if (role === 'conductor') {
-                driverGroup.style.display = 'block';
-            } else {
-                driverGroup.style.display = 'none';
-            }
+            driverGroup.style.display = role === 'conductor' ? 'block' : 'none';
 
             document.getElementById('loginModal').style.display = 'flex';
             document.getElementById('pinInput').focus();
@@ -570,7 +593,6 @@
             document.getElementById('portalView').style.display = 'none';
             document.getElementById('appHeader').style.display = 'flex';
 
-            // Activar GPS del dispositivo en tiempo real
             startLocationTracking();
 
             if (role === 'gestor') {
@@ -591,7 +613,6 @@
             }
         }
 
-        // RASTREO GPS AUTOMÁTICO
         function startLocationTracking() {
             if ("geolocation" in navigator) {
                 watchId = navigator.geolocation.watchPosition(
@@ -600,16 +621,14 @@
                         let lng = position.coords.longitude;
 
                         if (activeRole === 'conductor' && loggedDriverName) {
-                            if (driversLocation[loggedDriverName]) {
-                                driversLocation[loggedDriverName].lat = lat;
-                                driversLocation[loggedDriverName].lng = lng;
-                                saveDriversLoc();
-                            }
+                            db.ref(`driversLocation/${loggedDriverName}`).update({
+                                lat: lat,
+                                lng: lng,
+                                status: driversLocation[loggedDriverName]?.status || "En espera"
+                            });
                         }
                     },
-                    (error) => {
-                        console.warn("Aviso de GPS: No se pudo obtener la ubicación automática.", error);
-                    },
+                    (error) => { console.warn("GPS:", error); },
                     { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
                 );
             }
@@ -636,7 +655,7 @@
                     attribution: 'Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS'
                 }).addTo(map);
 
-                L.marker([14.3333, -90.1583]).addTo(map).bindPopup("<b>Base Transportes Villalobos</b>");
+                L.marker([14.3333, -90.1583]).addTo(map).bindPopup("<b>Base Dash Delivery</b>");
             }
             map.invalidateSize();
             updateMapMarkers();
@@ -647,22 +666,19 @@
             for (let name in markers) { map.removeLayer(markers[name]); }
             markers = {};
 
-            // Recargar ubicaciones actualizadas desde localStorage (sincroniza con los celulares de los motoristas)
-            driversLocation = JSON.parse(localStorage.getItem('villalobos_drivers_loc')) || driversLocation;
-
             for (let driverName in driversLocation) {
                 let info = driversLocation[driverName];
                 let isRuta = info.status === 'En ruta';
-                let badgeColor = isRuta ? '#059669' : '#f59e0b'; // Verde si en ruta, Naranja si en espera
+                let badgeColor = isRuta ? '#059669' : '#f59e0b';
                 let shortName = driverName.split(' ')[0];
 
                 let icon = L.divIcon({
                     className: 'custom-icon',
-                    html: `<div style="background:${badgeColor}; color:white; padding:4px 8px; border-radius:12px; font-weight:bold; font-size:11px; box-shadow:0 2px 4px rgba(0,0,0,0.3); white-space: nowrap;">🛵 ${shortName}: ${info.status}</div>`
+                    html: `<div style="background:${badgeColor}; color:white; padding:4px 8px; border-radius:12px; font-weight:bold; font-size:11px; box-shadow:0 2px 4px rgba(0,0,0,0.3); white-space: nowrap;">🛵 ${shortName}: ${info.status || 'En espera'}</div>`
                 });
 
                 markers[driverName] = L.marker([info.lat, info.lng], { icon: icon }).addTo(map)
-                    .bindPopup(`<b>Conductor:</b> ${driverName}<br><b>Estado:</b> ${info.status}`);
+                    .bindPopup(`<b>Conductor:</b> ${driverName}<br><b>Estado:</b> ${info.status || 'En espera'}`);
             }
         }
 
@@ -682,15 +698,12 @@
                 shippingPrice: parseFloat(document.getElementById('shippingPrice').value) || 0,
                 payer: document.getElementById('shippingPayer').value,
                 driver: document.getElementById('assignedDriver').value,
-                status: 'Pendiente',
-                km: 0
+                status: 'Pendiente'
             };
 
-            orders.push(newOrder);
-            saveData();
+            db.ref('orders').push(newOrder);
             closeOrderModal();
             document.getElementById('orderForm').reset();
-            updateGestorView();
             alert(`✅ Orden #${newOrder.id} enviada correctamente a ${newOrder.driver}`);
         }
 
@@ -770,11 +783,11 @@
 
                 let actionBtn = '';
                 if (o.status === 'Pendiente') {
-                    actionBtn = `<button class="btn btn-primary btn-block" onclick="updateOrderStatus(${o.id}, 'Aceptado')">✋ Aceptar Orden</button>`;
+                    actionBtn = `<button class="btn btn-primary btn-block" onclick="updateOrderStatus('${o.firebaseId}', 'Aceptado')">✋ Aceptar Orden</button>`;
                 } else if (o.status === 'Aceptado') {
-                    actionBtn = `<button class="btn btn-info btn-block" onclick="updateOrderStatus(${o.id}, 'En Ruta')">▶️ Comenzar Reparto</button>`;
+                    actionBtn = `<button class="btn btn-info btn-block" onclick="updateOrderStatus('${o.firebaseId}', 'En Ruta')">▶️ Comenzar Reparto</button>`;
                 } else if (o.status === 'En Ruta') {
-                    actionBtn = `<button class="btn btn-danger btn-block" onclick="updateOrderStatus(${o.id}, 'Entregado')">🏁 Ruta Terminada / Entregado</button>`;
+                    actionBtn = `<button class="btn btn-danger btn-block" onclick="updateOrderStatus('${o.firebaseId}', 'Entregado')">🏁 Ruta Terminada / Entregado</button>`;
                 }
 
                 let card = document.createElement('div');
@@ -799,46 +812,14 @@
             });
         }
 
-        function updateOrderStatus(orderId, newStatus) {
-            let order = orders.find(o => o.id == orderId);
-            if (order) {
-                order.status = newStatus;
-                
-                // Actualizar el estado del conductor en el mapa
-                if (driversLocation[loggedDriverName]) {
-                    if (newStatus === 'En Ruta') {
-                        driversLocation[loggedDriverName].status = 'En ruta';
-                    } else if (newStatus === 'Entregado') {
-                        // Verificar si le quedan más órdenes activas
-                        let stillActive = orders.some(o => o.driver === loggedDriverName && (o.status === 'Aceptado' || o.status === 'En Ruta'));
-                        if (!stillActive) {
-                            driversLocation[loggedDriverName].status = 'En espera';
-                        }
-                        order.km = +(Math.random() * 5 + 2).toFixed(1);
-                    }
-                    saveDriversLoc();
-                }
+        function updateOrderStatus(firebaseId, newStatus) {
+            db.ref(`orders/${firebaseId}`).update({ status: newStatus });
 
-                saveData();
-                renderConductorOrders();
-                if (activeRole === 'gestor') updateGestorView();
+            if (loggedDriverName) {
+                let statusText = newStatus === 'En Ruta' ? 'En ruta' : 'En espera';
+                db.ref(`driversLocation/${loggedDriverName}`).update({ status: statusText });
             }
         }
-
-        function saveData() {
-            localStorage.setItem('villalobos_v5_orders', JSON.stringify(orders));
-        }
-
-        function saveDriversLoc() {
-            localStorage.setItem('villalobos_drivers_loc', JSON.stringify(driversLocation));
-        }
-
-        // Refrescar mapa automáticamente cada 4 segundos para ver movimientos de los celulares
-        setInterval(() => {
-            if (activeRole === 'gestor' && map) {
-                updateMapMarkers();
-            }
-        }, 4000);
     </script>
 </body>
 </html>
