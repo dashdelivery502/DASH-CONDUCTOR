@@ -157,6 +157,8 @@
 
         .btn-primary { background-color: var(--primary); color: var(--white); }
         .btn-primary:hover { background-color: var(--primary-dark); }
+        .btn-success { background-color: #0284c7; color: var(--white); }
+        .btn-success:hover { background-color: #0369a1; }
         .btn-danger { background-color: var(--danger); color: var(--white); }
         .btn-info { background-color: var(--info); color: var(--white); }
         .btn-block { width: 100%; }
@@ -199,6 +201,7 @@
         @media (max-width: 900px) {
             .dashboard-grid { grid-template-columns: 1fr; }
             .app-header { flex-direction: column; gap: 10px; text-align: center; }
+            .main-container { padding: 1rem; }
         }
 
         .card {
@@ -230,6 +233,32 @@
         .badge-en-ruta { background: #e0f2fe; color: #0284c7; }
         .badge-entregado { background: #d1fae5; color: #059669; }
 
+        /* SUBMENÚ PESTAÑAS CONDUCTOR */
+        .driver-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 1rem;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 8px;
+        }
+
+        .driver-tab-btn {
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
+            font-weight: 600;
+            font-size: 0.9rem;
+            color: #64748b;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.2s;
+        }
+
+        .driver-tab-btn.active {
+            background-color: var(--primary);
+            color: var(--white);
+        }
+
         /* TARJETAS CONDUCTOR */
         .driver-orders-grid {
             display: grid;
@@ -254,6 +283,23 @@
             padding: 10px;
             border-radius: 8px;
             margin: 10px 0;
+        }
+
+        .completed-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .completed-item {
+            background: var(--white);
+            padding: 12px 16px;
+            border-radius: 10px;
+            border-left: 4px solid var(--primary);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         /* MODALES */
@@ -321,8 +367,8 @@
                     <label>Selecciona tu Nombre:</label>
                     <select id="loginDriverName">
                         <option value="Carlos Villalobos">Carlos Villalobos (Pulsar 150)</option>
-                        <option value="Nelson Pérez">Nelson Pérez (Rowor F100)</option>
-                        <option value="José Morales">José Morales (Moto Local)</option>
+                        <option value="Juan Pérez">Juan Pérez (Rowor F100)</option>
+                        <option value="José Morales">José Morales (pulsar 125ls)</option>
                     </select>
                 </div>
                 <div class="form-group">
@@ -352,9 +398,12 @@
     <main class="main-container">
         <!-- VISTA GESTOR -->
         <div id="gestorSection" class="view-section">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 10px;">
                 <h2>Panel de Despacho y Operaciones</h2>
-                <button class="btn btn-primary" onclick="openOrderModal()">+ Crear Nueva Orden</button>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-success" onclick="downloadDailyCSV()">📥 Descargar Órdenes del Día (CSV)</button>
+                    <button class="btn btn-primary" onclick="openOrderModal()">+ Crear Nueva Orden</button>
+                </div>
             </div>
 
             <div class="kpi-grid">
@@ -375,14 +424,14 @@
                     <p id="kpiEfectivo">Q0.00</p>
                 </div>
                 <div class="kpi-card" style="border-left-color: var(--accent);">
-                    <h3>Por Cobrar a Restaurante</h3>
-                    <p id="kpiRestaurantes">Q0.00</p>
+                    <h3>Total Fletes (Envíos)</h3>
+                    <p id="kpiFletes">Q0.00</p>
                 </div>
             </div>
 
             <div class="dashboard-grid">
                 <div class="card">
-                    <h2>🗺️ Monitoreo de Flota en Tiempo Real</h2>
+                    <h2>🗺️ Monitoreo Satelital de Flota en Tiempo Real</h2>
                     <div id="map"></div>
                 </div>
                 <div class="card">
@@ -409,13 +458,32 @@
 
         <!-- VISTA CONDUCTOR -->
         <div id="conductorSection" class="view-section">
-            <div class="card" style="margin-bottom: 1.5rem;">
-                <h2 style="margin: 0;" id="conductorWelcomeTitle">Mis Rutas Asignadas</h2>
-                <p style="font-size: 0.85rem; color: #64748b; margin-top: 4px;">Envíos asignados a tu perfil:</p>
+            <div class="card" style="margin-bottom: 1rem;">
+                <h2 style="margin: 0;" id="conductorWelcomeTitle">Rutas de Conductor</h2>
+                <p style="font-size: 0.85rem; color: #64748b; margin-top: 4px;">Selecciona la pestaña para consultar:</p>
             </div>
 
-            <div id="conductorOrdersContainer" class="driver-orders-grid">
-                <!-- Tarjetas dinámicas -->
+            <!-- SUBMENÚ DE PESTAÑAS PARA EL CONDUCTOR -->
+            <div class="driver-tabs">
+                <button id="tabActivasBtn" class="driver-tab-btn active" onclick="switchDriverTab('activas')">📦 Envíos Activos</button>
+                <button id="tabHistorialBtn" class="driver-tab-btn" onclick="switchDriverTab('historial')">📋 Historial de Hoy</button>
+            </div>
+
+            <!-- CONTENIDO PESTAÑA 1: ÓRDENAS ACTIVAS (PRIORIDAD) -->
+            <div id="driverTabActivas">
+                <div id="conductorOrdersContainer" class="driver-orders-grid">
+                    <!-- Tarjetas dinámicas -->
+                </div>
+            </div>
+
+            <!-- CONTENIDO PESTAÑA 2: HISTORIAL DE ENTREGAS DÍA -->
+            <div id="driverTabHistorial" style="display: none;">
+                <div class="card">
+                    <h3 style="font-size: 1rem; margin-bottom: 0.8rem; color: var(--secondary);">Entregas Realizadas Hoy</h3>
+                    <div id="conductorCompletedContainer" class="completed-list">
+                        <!-- Lista dinámica del historial -->
+                    </div>
+                </div>
             </div>
         </div>
     </main>
@@ -487,12 +555,11 @@
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-    <!-- SDKs de Firebase (Versión 8 compatible con Realtime Database) -->
+    <!-- SDKs de Firebase -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-        // CONFIGURACIÓN DE FIREBASE CON TUS CREDENCIALES EXACTAS
         const firebaseConfig = {
             apiKey: "AIzaSyAhukqTLRw27k5fi2-Ngv-YxcsyXenl6lU",
             authDomain: "dash-conductor.firebaseapp.com",
@@ -504,7 +571,6 @@
             measurementId: "G-20VPCG0KT8"
         };
 
-        // Inicializar Firebase
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
@@ -527,7 +593,6 @@
         let orders = [];
         let driversLocation = {};
 
-        // Sincronizar órdenes en la nube en TIEMPO REAL
         db.ref('orders').on('value', (snapshot) => {
             const data = snapshot.val();
             orders = [];
@@ -540,7 +605,6 @@
             if (activeRole === 'conductor') renderConductorOrders();
         });
 
-        // Sincronizar ubicaciones de motoristas en la nube
         db.ref('driversLocation').on('value', (snapshot) => {
             driversLocation = snapshot.val() || {};
             if (activeRole === 'gestor' && map) updateMapMarkers();
@@ -609,7 +673,27 @@
                 document.getElementById('conductorWelcomeTitle').textContent = `Rutas de ${loggedDriverName}`;
                 document.getElementById('conductorSection').classList.add('active');
                 document.getElementById('gestorSection').classList.remove('active');
+                switchDriverTab('activas');
                 renderConductorOrders();
+            }
+        }
+
+        function switchDriverTab(tabName) {
+            const btnActivas = document.getElementById('tabActivasBtn');
+            const btnHistorial = document.getElementById('tabHistorialBtn');
+            const secActivas = document.getElementById('driverTabActivas');
+            const secHistorial = document.getElementById('driverTabHistorial');
+
+            if (tabName === 'activas') {
+                btnActivas.classList.add('active');
+                btnHistorial.classList.remove('active');
+                secActivas.style.display = 'block';
+                secHistorial.style.display = 'none';
+            } else {
+                btnHistorial.classList.add('active');
+                btnActivas.classList.remove('active');
+                secHistorial.style.display = 'block';
+                secActivas.style.display = 'none';
             }
         }
 
@@ -648,19 +732,29 @@
 
         function initMap() {
             if (!map) {
-                map = L.map('map').setView([14.3333, -90.1583], 14);
+                map = L.map('map').setView([14.3333, -90.1583], 15);
                 
-                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+                // Capa Satelital ESRI (Vista aérea con callejones)
+                let satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                     maxZoom: 19,
-                    attribution: 'Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS'
-                }).addTo(map);
+                    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, USDA, USGS, GeoEye'
+                });
+
+                // Capa transparente con Nombres de Calles y Lugares
+                let labelsLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+                    maxZoom: 19
+                });
+
+                satelliteLayer.addTo(map);
+                labelsLayer.addTo(map);
 
                 L.marker([14.3333, -90.1583]).addTo(map).bindPopup("<b>Base Dash Delivery</b>");
             }
             map.invalidateSize();
             updateMapMarkers();
         }
-           function updateMapMarkers() {
+
+        function updateMapMarkers() {
             if (!map) return;
             for (let name in markers) { map.removeLayer(markers[name]); }
             markers = {};
@@ -669,9 +763,8 @@
                 let info = driversLocation[driverName];
                 let isRuta = info.status === 'En ruta';
                 
-                // Fondo y color de letras mejorados para mayor visibilidad
-                let bgColor = isRuta ? '#10b981' : '#f59e0b'; // Verde esmeralda o Ámbar brillante
-                let textColor = '#000000'; // Letras negras en negrita para máxima lectura
+                let bgColor = isRuta ? '#10b981' : '#f59e0b';
+                let textColor = '#000000';
                 let shortName = driverName.split(' ')[0];
 
                 let icon = L.divIcon({
@@ -715,22 +808,20 @@
             document.getElementById('kpiEnRuta').textContent = orders.filter(o => o.status === 'En Ruta').length;
 
             let efectivo = 0;
-            let restaurantes = 0;
+            let totalFletes = 0;
 
             orders.forEach(o => {
+                totalFletes += o.shippingPrice || 0;
+
                 if (o.status === 'Entregado') {
                     let cobroProd = o.productCollect === 'si' ? o.productPrice : 0;
                     let cobroFlete = o.payer === 'cliente' ? o.shippingPrice : 0;
                     efectivo += (cobroProd + cobroFlete);
-
-                    if (o.payer === 'restaurante') {
-                        restaurantes += o.shippingPrice;
-                    }
                 }
             });
 
             document.getElementById('kpiEfectivo').textContent = `Q${efectivo.toFixed(2)}`;
-            document.getElementById('kpiRestaurantes').textContent = `Q${restaurantes.toFixed(2)}`;
+            document.getElementById('kpiFletes').textContent = `Q${totalFletes.toFixed(2)}`;
 
             let tbody = document.getElementById('ordersTableBody');
             tbody.innerHTML = '';
@@ -759,59 +850,120 @@
             updateMapMarkers();
         }
 
-        function renderConductorOrders() {
-            let container = document.getElementById('conductorOrdersContainer');
-            container.innerHTML = '';
-
-            let driverOrders = orders.filter(o => o.driver === loggedDriverName && o.status !== 'Entregado');
-
-            if (driverOrders.length === 0) {
-                container.innerHTML = `<div class="card" style="grid-column: 1/-1; text-align:center; padding: 2rem;"><p>No tienes órdenes pendientes asignadas en este momento. 👍</p></div>`;
+        function downloadDailyCSV() {
+            if (orders.length === 0) {
+                alert("⚠️ No hay órdenes registradas para exportar.");
                 return;
             }
 
-            driverOrders.forEach(o => {
-                let cobroProducto = o.productCollect === 'si' ? o.productPrice : 0;
-                let cobroFlete = o.payer === 'cliente' ? o.shippingPrice : 0;
-                let totalACobrar = cobroProducto + cobroFlete;
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+            csvContent += "ID Orden,Cliente,Direccion,Restaurante,Contenido,Precio Producto,Cobrar Producto?,Precio Flete,Quien Paga Flete,Conductor,Estado\n";
 
-                let fleteDetalle = o.payer === 'cliente'
-                    ? `Q${o.shippingPrice.toFixed(2)}`
-                    : `Q0.00 (Envío Gratis - Paga Restaurante)`;
-
-                let productoDetalle = o.productCollect === 'si'
-                    ? `Q${o.productPrice.toFixed(2)}`
-                    : `Q0.00 (Ya Pagado Previamente)`;
-
-                let actionBtn = '';
-                if (o.status === 'Pendiente') {
-                    actionBtn = `<button class="btn btn-primary btn-block" onclick="updateOrderStatus('${o.firebaseId}', 'Aceptado')">✋ Aceptar Orden</button>`;
-                } else if (o.status === 'Aceptado') {
-                    actionBtn = `<button class="btn btn-info btn-block" onclick="updateOrderStatus('${o.firebaseId}', 'En Ruta')">▶️ Comenzar Reparto</button>`;
-                } else if (o.status === 'En Ruta') {
-                    actionBtn = `<button class="btn btn-danger btn-block" onclick="updateOrderStatus('${o.firebaseId}', 'Entregado')">🏁 Ruta Terminada / Entregado</button>`;
-                }
-
-                let card = document.createElement('div');
-                card.className = 'driver-card';
-                card.innerHTML = `
-                    <h3>Orden #${o.id} - ${o.restaurant}</h3>
-                    <p><b>Cliente:</b> ${o.client}</p>
-                    <p><b>Dirección:</b> ${o.address}</p>
-                    <p><b>Llevar:</b> ${o.description}</p>
-                    
-                    <div class="cobro-box">
-                        <p style="font-size:0.8rem; color:#64748b; margin-bottom:2px;">💵 <b>DETALLE DE COBRO AL CLIENTE:</b></p>
-                        <p style="font-size:0.85rem;">• Comida/Producto: <b>${productoDetalle}</b></p>
-                        <p style="font-size:0.85rem;">• Envío/Flete: <b>${fleteDetalle}</b></p>
-                        <hr style="margin: 6px 0; border:0; border-top:1px solid #cbd5e1;">
-                        <p style="font-size:1rem; color:#059669; font-weight:bold;">TOTAL A COBRAR: Q${totalACobrar.toFixed(2)}</p>
-                    </div>
-
-                    <div style="margin-top: 10px;">${actionBtn}</div>
-                `;
-                container.appendChild(card);
+            orders.forEach(o => {
+                let row = [
+                    `#${o.id}`,
+                    `"${o.client || ''}"`,
+                    `"${o.address || ''}"`,
+                    `"${o.restaurant || ''}"`,
+                    `"${o.description || ''}"`,
+                    o.productPrice || 0,
+                    o.productCollect || '',
+                    o.shippingPrice || 0,
+                    o.payer || '',
+                    `"${o.driver || ''}"`,
+                    o.status || ''
+                ];
+                csvContent += row.join(",") + "\n";
             });
+
+            let encodedUri = encodeURI(csvContent);
+            let link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `ordenes_dash_delivery_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function renderConductorOrders() {
+            let containerActivas = document.getElementById('conductorOrdersContainer');
+            let containerCompleted = document.getElementById('conductorCompletedContainer');
+            
+            containerActivas.innerHTML = '';
+            containerCompleted.innerHTML = '';
+
+            let driverActiveOrders = orders.filter(o => o.driver === loggedDriverName && o.status !== 'Entregado');
+            let driverCompletedOrders = orders.filter(o => o.driver === loggedDriverName && o.status === 'Entregado');
+
+            // 1. RENDER ÓRDENES ACTIVAS
+            if (driverActiveOrders.length === 0) {
+                containerActivas.innerHTML = `<div class="card" style="grid-column: 1/-1; text-align:center; padding: 2rem;"><p>No tienes órdenes pendientes asignadas en este momento. 👍</p></div>`;
+            } else {
+                driverActiveOrders.forEach(o => {
+                    let cobroProducto = o.productCollect === 'si' ? o.productPrice : 0;
+                    let cobroFlete = o.payer === 'cliente' ? o.shippingPrice : 0;
+                    let totalACobrar = cobroProducto + cobroFlete;
+
+                    let fleteDetalle = o.payer === 'cliente'
+                        ? `Q${o.shippingPrice.toFixed(2)}`
+                        : `Q0.00 (Envío Gratis - Paga Restaurante)`;
+
+                    let productoDetalle = o.productCollect === 'si'
+                        ? `Q${o.productPrice.toFixed(2)}`
+                        : `Q0.00 (Ya Pagado Previamente)`;
+
+                    let actionBtn = '';
+                    if (o.status === 'Pendiente') {
+                        actionBtn = `<button class="btn btn-primary btn-block" onclick="updateOrderStatus('${o.firebaseId}', 'Aceptado')">✋ Aceptar Orden</button>`;
+                    } else if (o.status === 'Aceptado') {
+                        actionBtn = `<button class="btn btn-info btn-block" onclick="updateOrderStatus('${o.firebaseId}', 'En Ruta')">▶️ Comenzar Reparto</button>`;
+                    } else if (o.status === 'En Ruta') {
+                        actionBtn = `<button class="btn btn-danger btn-block" onclick="updateOrderStatus('${o.firebaseId}', 'Entregado')">🏁 Ruta Terminada / Entregado</button>`;
+                    }
+
+                    let card = document.createElement('div');
+                    card.className = 'driver-card';
+                    card.innerHTML = `
+                        <h3>Orden #${o.id} - ${o.restaurant}</h3>
+                        <p><b>Cliente:</b> ${o.client}</p>
+                        <p><b>Dirección:</b> ${o.address}</p>
+                        <p><b>Llevar:</b> ${o.description}</p>
+                        
+                        <div class="cobro-box">
+                            <p style="font-size:0.8rem; color:#64748b; margin-bottom:2px;">💵 <b>DETALLE DE COBRO AL CLIENTE:</b></p>
+                            <p style="font-size:0.85rem;">• Comida/Producto: <b>${productoDetalle}</b></p>
+                            <p style="font-size:0.85rem;">• Envío/Flete: <b>${fleteDetalle}</b></p>
+                            <hr style="margin: 6px 0; border:0; border-top:1px solid #cbd5e1;">
+                            <p style="font-size:1rem; color:#059669; font-weight:bold;">TOTAL A COBRAR: Q${totalACobrar.toFixed(2)}</p>
+                        </div>
+
+                        <div style="margin-top: 10px;">${actionBtn}</div>
+                    `;
+                    containerActivas.appendChild(card);
+                });
+            }
+
+            // 2. RENDER HISTORIAL DE ENTREGAS
+            if (driverCompletedOrders.length === 0) {
+                containerCompleted.innerHTML = `<p style="font-size: 0.9rem; color: #64748b; text-align: center; padding: 1rem;">Aún no has finalizado entregas el día de hoy.</p>`;
+            } else {
+                driverCompletedOrders.slice().reverse().forEach(o => {
+                    let item = document.createElement('div');
+                    item.className = 'completed-item';
+                    item.innerHTML = `
+                        <div>
+                            <p style="font-weight: 700; font-size: 0.95rem; color: #0f172a;">👤 ${o.client}</p>
+                            <p style="font-size: 0.85rem; color: #475569; margin-top: 2px;">📍 ${o.address}</p>
+                            <small style="color: #64748b; font-size: 0.75rem;">Origen: ${o.restaurant}</small>
+                        </div>
+                        <div style="text-align: right;">
+                            <span class="badge badge-entregado">✅ Entregado</span>
+                            <p style="font-size: 0.8rem; font-weight: 700; color: #059669; margin-top: 4px;">#${o.id}</p>
+                        </div>
+                    `;
+                    containerCompleted.appendChild(item);
+                });
+            }
         }
 
         function updateOrderStatus(firebaseId, newStatus) {
