@@ -660,8 +660,7 @@
             map.invalidateSize();
             updateMapMarkers();
         }
-
-        function updateMapMarkers() {
+           function updateMapMarkers() {
             if (!map) return;
             for (let name in markers) { map.removeLayer(markers[name]); }
             markers = {};
@@ -669,12 +668,15 @@
             for (let driverName in driversLocation) {
                 let info = driversLocation[driverName];
                 let isRuta = info.status === 'En ruta';
-                let badgeColor = isRuta ? '#059669' : '#f59e0b';
+                
+                // Fondo y color de letras mejorados para mayor visibilidad
+                let bgColor = isRuta ? '#10b981' : '#f59e0b'; // Verde esmeralda o Ámbar brillante
+                let textColor = '#000000'; // Letras negras en negrita para máxima lectura
                 let shortName = driverName.split(' ')[0];
 
                 let icon = L.divIcon({
                     className: 'custom-icon',
-                    html: `<div style="background:${badgeColor}; color:white; padding:4px 8px; border-radius:12px; font-weight:bold; font-size:11px; box-shadow:0 2px 4px rgba(0,0,0,0.3); white-space: nowrap;">🛵 ${shortName}: ${info.status || 'En espera'}</div>`
+                    html: `<div style="background:${bgColor}; color:${textColor}; padding:6px 10px; border-radius:14px; font-weight:800; font-size:12px; box-shadow:0 3px 6px rgba(0,0,0,0.4); border: 2px solid #ffffff; white-space: nowrap;">🛵 ${shortName}: ${info.status || 'En espera'}</div>`
                 });
 
                 markers[driverName] = L.marker([info.lat, info.lng], { icon: icon }).addTo(map)
