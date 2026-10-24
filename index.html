@@ -425,6 +425,7 @@
         <div id="gestorSection" class="view-section">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 10px;">
                 <div>
+                    <button class="btn btn-info" onclick="toggleTVMode()">📺 Modo TV Pantalla Completa</button>
                     <h2>Panel de Despacho y Operaciones</h2>
                     <p style="font-size: 0.8rem; color: #64748b;">Monitoreo en Nueva Santa Rosa | (<span id="currentDateDisplay"></span>)</p>
                 </div>
@@ -479,27 +480,57 @@
                     <h2>🗺️ Monitoreo Satelital de Flota en Tiempo Real</h2>
                     <div id="map"></div>
                 </div>
-                <div class="card">
-                    <h2>📦 Control de Envíos Armados</h2>
-                    <div class="table-responsive">
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>ID / Cliente</th>
-                                    <th>Detalle / Origen</th>
-                                    <th>Conductor</th>
-                                    <th>Cobro Cliente</th>
-                                    <th>Estado</th>
-                                </tr>
-                            </thead>
-                            <tbody id="ordersTableBody">
-                                <!-- Dinámico -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
+             <div class="card">
+    <!-- Pestañas para el Gestor -->
+    <div class="driver-tabs" style="margin-bottom: 1rem;">
+        <button id="gestorTabNuevasBtn" class="driver-tab-btn active" onclick="switchGestorTab('nuevas')">
+            🔔 Nuevas Órdenes (<span id="countNuevasOrders">0</span>)
+        </button>
+        <button id="gestorTabTodasBtn" class="driver-tab-btn" onclick="switchGestorTab('todas')">
+            📋 Envíos en Curso / Historial
+        </button>
+    </div>
+
+    <!-- Pestaña 1: Nuevas Órdenes por Revisar -->
+    <div id="gestorTabNuevas">
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID / Fecha</th>
+                        <th>Cliente y Dirección</th>
+                        <th>Restaurante / Detalle</th>
+                        <th>Pago / Flete</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="newOrdersTableBody">
+                    <!-- Dinámico -->
+                </tbody>
+            </table>
         </div>
+    </div>
+
+    <!-- Pestaña 2: Control General de Envíos -->
+    <div id="gestorTabTodas" style="display: none;">
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID / Cliente</th>
+                        <th>Detalle / Origen</th>
+                        <th>Conductor</th>
+                        <th>Cobro Cliente</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody id="ordersTableBody">
+                    <!-- Dinámico -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
         <!-- VISTA CONDUCTOR -->
         <div id="conductorSection" class="view-section">
@@ -682,6 +713,72 @@ const db = firebase.database();
         }
 
         document.getElementById('currentDateDisplay').textContent = getTodayString();
+
+            // Función para cambiar de pestaña en el panel del Gestor
+function switchGestorTab(tabName) {
+    const btnNuevas = document.getElementById('gestorTabNuevasBtn');
+    const btnTodas = document.getElementById('gestorTabTodasBtn');
+    const secNuevas = document.getElementById('gestorTabNuevas');
+    const secTodas = document.getElementById('gestorTabTodas');
+
+    if (tabName === 'nuevas') {
+        btnNuevas.classList.add('active');
+        btnTodas.classList.remove('active');
+        secNuevas.style.display = 'block';
+        secTodas.style.display = 'none';
+    } else {
+        btnTodas.classList.add('active');
+        btnNuevas.classList.remove('active');
+        secTodas.style.display = 'block';
+        secNuevas.style.display = 'none';
+    }
+}
+
+// Función para actualizar la tabla de Nuevas Órdenes en la vista del Gestor
+function renderNuevasOrdenes(filteredOrders) {
+    const tbodyNuevas = document.getElementById('newOrdersTableBody');
+    const countSpan = document.getElementById('countNuevasOrders');
+    if (!tbodyNuevas) return;
+
+    // Filtramos solo las órdenes que vienen desde la web en estado 'Pendiente'
+    const nuevas = filteredOrders.filter(o => o.status === 'Pendiente');
+    countSpan.textContent = nuevas.length;
+
+    tbodyNuevas.innerHTML = '';
+
+    if (nuevas.length === 0) {
+        tbodyNuevas.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#64748b; padding:1.5rem;">No hay nuevas órdenes pendientes por revisar. 👍</td></tr>`;
+        return;
+    }
+
+    nuevas.slice().reverse().forEach(o => {
+        let prodACobrar = o.productCollect === 'si' ? o.productPrice : 0;
+        let fleteACobrar = o.payer === 'cliente' ? o.shippingPrice : 0;
+        let totalCliente = prodACobrar + fleteACobrar;
+
+        let notesHtml = o.notes ? `<br><small style="color:#d97706;">📌 ${o.notes}</small>` : '';
+
+        let tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><b>#${o.id}</b><br><small style="color:#64748b;">${o.date || ''}</small></td>
+            <td><b>${o.client}</b><br><small>📍 ${o.address}</small></td>
+            <td><b>${o.restaurant}</b><br><small>${o.description}</small>${notesHtml}</td>
+            <td><b>Q${totalCliente.toFixed(2)}</b><br><small>${o.payer === 'restaurante' ? 'Flete Gratis' : 'Flete Cliente'}</small></td>
+            <td>
+                <button class="btn btn-success" style="padding: 4px 8px; font-size: 0.75rem;" onclick="aprobarOrdenGestor('${o.firebaseId}')">
+                    ✅ Confirmar y Despachar
+                </button>
+            </td>
+        `;
+        tbodyNuevas.appendChild(tr);
+    });
+}
+
+// Función para que el Gestor apruebe y pase el pedido al conductor
+function aprobarOrdenGestor(firebaseId) {
+    db.ref(`orders/${firebaseId}`).update({ status: 'Aceptado' });
+    alert("¡Pedido confirmado y enviado al conductor asignado!");
+}
 
         function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
             const R = 6371; 
@@ -1186,6 +1283,20 @@ const db = firebase.database();
                 db.ref(`driversLocation/${loggedDriverName}`).update({ status: statusText });
             }
         }
+        function toggleTVMode() {
+    const mapCard = document.getElementById('map').parentElement;
+    if (!document.fullscreenElement) {
+        if (mapCard.requestFullscreen) {
+            mapCard.requestFullscreen();
+        } else if (mapCard.webkitRequestFullscreen) {
+            mapCard.webkitRequestFullscreen();
+        }
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+    }
+}
     </script>
 </body>
 </html>
