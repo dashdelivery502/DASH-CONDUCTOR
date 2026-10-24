@@ -233,7 +233,7 @@
         .badge-en-ruta { background: #e0f2fe; color: #0284c7; }
         .badge-entregado { background: #d1fae5; color: #059669; }
 
-        /* SUBMENÚ PESTAÑAS CONDUCTOR */
+        /* SUBMENÚ PESTAÑAS CONDUCTOR / GESTOR */
         .driver-tabs {
             display: flex;
             gap: 10px;
@@ -420,18 +420,19 @@
         </div>
     </div>
 
-    <main class="main-container">
+    <!-- CONTENEDOR PRINCIPAL TV MODE WRAPPER -->
+    <main class="main-container" id="tvDashboardContainer">
         <!-- VISTA GESTOR -->
         <div id="gestorSection" class="view-section">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 10px;">
                 <div>
-                    <button class="btn btn-info" onclick="toggleTVMode()">📺 Modo TV Pantalla Completa</button>
                     <h2>Panel de Despacho y Operaciones</h2>
                     <p style="font-size: 0.8rem; color: #64748b;">Monitoreo en Nueva Santa Rosa | (<span id="currentDateDisplay"></span>)</p>
                 </div>
                 
                 <!-- SELECTOR DE FECHAS PARA EL GESTOR Y BOTONES -->
                 <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <button class="btn btn-info" onclick="toggleTVMode()">📺 Modo TV Pantalla Completa</button>
                     <div style="display: flex; align-items: center; gap: 6px; background: #ffffff; padding: 6px 12px; border-radius: 8px; border: 1px solid #cbd5e1;">
                         <label style="font-size: 0.8rem; font-weight: 600; color: #475569;">📅 Fecha:</label>
                         <select id="gestorDateFilter" onchange="updateGestorView()" style="border: none; outline: none; background: transparent; font-size: 0.85rem; font-weight: 600; color: #0f172a; cursor: pointer;">
@@ -480,57 +481,59 @@
                     <h2>🗺️ Monitoreo Satelital de Flota en Tiempo Real</h2>
                     <div id="map"></div>
                 </div>
-             <div class="card">
-    <!-- Pestañas para el Gestor -->
-    <div class="driver-tabs" style="margin-bottom: 1rem;">
-        <button id="gestorTabNuevasBtn" class="driver-tab-btn active" onclick="switchGestorTab('nuevas')">
-            🔔 Nuevas Órdenes (<span id="countNuevasOrders">0</span>)
-        </button>
-        <button id="gestorTabTodasBtn" class="driver-tab-btn" onclick="switchGestorTab('todas')">
-            📋 Envíos en Curso / Historial
-        </button>
-    </div>
+                <!-- PANEL DE GESTIÓN DE ÓRDENES CON PESTAÑAS CORREGIDAS -->
+                <div class="card">
+                    <div class="driver-tabs" style="margin-bottom: 1rem;">
+                        <button id="gestorTabNuevasBtn" class="driver-tab-btn active" onclick="switchGestorTab('nuevas')">
+                            🔔 Nuevas Órdenes (<span id="countNuevasOrders">0</span>)
+                        </button>
+                        <button id="gestorTabTodasBtn" class="driver-tab-btn" onclick="switchGestorTab('todas')">
+                            📋 Envíos en Curso / Historial
+                        </button>
+                    </div>
 
-    <!-- Pestaña 1: Nuevas Órdenes por Revisar -->
-    <div id="gestorTabNuevas">
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID / Fecha</th>
-                        <th>Cliente y Dirección</th>
-                        <th>Restaurante / Detalle</th>
-                        <th>Pago / Flete</th>
-                        <th>Acción</th>
-                    </tr>
-                </thead>
-                <tbody id="newOrdersTableBody">
-                    <!-- Dinámico -->
-                </tbody>
-            </table>
-        </div>
-    </div>
+                    <!-- PESTAÑA 1: NUEVAS ÓRDENES -->
+                    <div id="gestorTabNuevas">
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ID / Fecha</th>
+                                        <th>Cliente y Dirección</th>
+                                        <th>Restaurante / Detalle</th>
+                                        <th>Pago / Flete</th>
+                                        <th>Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="newOrdersTableBody">
+                                    <!-- Dinámico -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
 
-    <!-- Pestaña 2: Control General de Envíos -->
-    <div id="gestorTabTodas" style="display: none;">
-        <div class="table-responsive">
-            <table>
-                <thead>
-                    <tr>
-                        <th>ID / Cliente</th>
-                        <th>Detalle / Origen</th>
-                        <th>Conductor</th>
-                        <th>Cobro Cliente</th>
-                        <th>Estado</th>
-                    </tr>
-                </thead>
-                <tbody id="ordersTableBody">
-                    <!-- Dinámico -->
-                </tbody>
-            </table>
+                    <!-- PESTAÑA 2: CONTROL GENERAL / HISTORIAL -->
+                    <div id="gestorTabTodas" style="display: none;">
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ID / Cliente</th>
+                                        <th>Detalle / Origen</th>
+                                        <th>Conductor</th>
+                                        <th>Cobro Cliente</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="ordersTableBody">
+                                    <!-- Dinámico -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-</div>
 
         <!-- VISTA CONDUCTOR -->
         <div id="conductorSection" class="view-section">
@@ -664,22 +667,22 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-         // Credenciales conectadas a tu proyecto principal: dash-delivery-502
-const firebaseConfig = {
-    apiKey: "AIzaSyArxtD5VjH4YH1T39dFn0yEyp9NAh42tXM",
-    authDomain: "dash-delivery-502.firebaseapp.com",
-    databaseURL: "https://dash-delivery-502-default-rtdb.firebaseio.com", // o la URL exacta de tu Realtime DB en dash-delivery-502
-    projectId: "dash-delivery-502",
-    storageBucket: "dash-delivery-502.firebasestorage.app",
-    messagingSenderId: "145432661248",
-    appId: "1:145432661248:web:2b811789ce6415995877e5",
-    measurementId: "G-9GX5BS52R2"
-};
+        // CONFIGURACIÓN UNIFICADA A PROYECTO PRINCIPAL (dash-delivery-502)
+        const firebaseConfig = {
+            apiKey: "AIzaSyArxtD5VjH4YH1T39dFn0yEyp9NAh42tXM",
+            authDomain: "dash-delivery-502.firebaseapp.com",
+            databaseURL: "https://dash-delivery-502-default-rtdb.firebaseio.com",
+            projectId: "dash-delivery-502",
+            storageBucket: "dash-delivery-502.firebasestorage.app",
+            messagingSenderId: "145432661248",
+            appId: "1:145432661248:web:2b811789ce6415995877e5",
+            measurementId: "G-9GX5BS52R2"
+        };
 
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
-const db = firebase.database();
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.database();
 
         // COORDENADAS BASE: NUEVA SANTA ROSA, GUATEMALA
         const NUEVA_SANTA_ROSA_COORDS = [14.3811, -90.2761];
@@ -713,72 +716,6 @@ const db = firebase.database();
         }
 
         document.getElementById('currentDateDisplay').textContent = getTodayString();
-
-            // Función para cambiar de pestaña en el panel del Gestor
-function switchGestorTab(tabName) {
-    const btnNuevas = document.getElementById('gestorTabNuevasBtn');
-    const btnTodas = document.getElementById('gestorTabTodasBtn');
-    const secNuevas = document.getElementById('gestorTabNuevas');
-    const secTodas = document.getElementById('gestorTabTodas');
-
-    if (tabName === 'nuevas') {
-        btnNuevas.classList.add('active');
-        btnTodas.classList.remove('active');
-        secNuevas.style.display = 'block';
-        secTodas.style.display = 'none';
-    } else {
-        btnTodas.classList.add('active');
-        btnNuevas.classList.remove('active');
-        secTodas.style.display = 'block';
-        secNuevas.style.display = 'none';
-    }
-}
-
-// Función para actualizar la tabla de Nuevas Órdenes en la vista del Gestor
-function renderNuevasOrdenes(filteredOrders) {
-    const tbodyNuevas = document.getElementById('newOrdersTableBody');
-    const countSpan = document.getElementById('countNuevasOrders');
-    if (!tbodyNuevas) return;
-
-    // Filtramos solo las órdenes que vienen desde la web en estado 'Pendiente'
-    const nuevas = filteredOrders.filter(o => o.status === 'Pendiente');
-    countSpan.textContent = nuevas.length;
-
-    tbodyNuevas.innerHTML = '';
-
-    if (nuevas.length === 0) {
-        tbodyNuevas.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#64748b; padding:1.5rem;">No hay nuevas órdenes pendientes por revisar. 👍</td></tr>`;
-        return;
-    }
-
-    nuevas.slice().reverse().forEach(o => {
-        let prodACobrar = o.productCollect === 'si' ? o.productPrice : 0;
-        let fleteACobrar = o.payer === 'cliente' ? o.shippingPrice : 0;
-        let totalCliente = prodACobrar + fleteACobrar;
-
-        let notesHtml = o.notes ? `<br><small style="color:#d97706;">📌 ${o.notes}</small>` : '';
-
-        let tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td><b>#${o.id}</b><br><small style="color:#64748b;">${o.date || ''}</small></td>
-            <td><b>${o.client}</b><br><small>📍 ${o.address}</small></td>
-            <td><b>${o.restaurant}</b><br><small>${o.description}</small>${notesHtml}</td>
-            <td><b>Q${totalCliente.toFixed(2)}</b><br><small>${o.payer === 'restaurante' ? 'Flete Gratis' : 'Flete Cliente'}</small></td>
-            <td>
-                <button class="btn btn-success" style="padding: 4px 8px; font-size: 0.75rem;" onclick="aprobarOrdenGestor('${o.firebaseId}')">
-                    ✅ Confirmar y Despachar
-                </button>
-            </td>
-        `;
-        tbodyNuevas.appendChild(tr);
-    });
-}
-
-// Función para que el Gestor apruebe y pase el pedido al conductor
-function aprobarOrdenGestor(firebaseId) {
-    db.ref(`orders/${firebaseId}`).update({ status: 'Aceptado' });
-    alert("¡Pedido confirmado y enviado al conductor asignado!");
-}
 
         function calculateHaversineDistance(lat1, lon1, lat2, lon2) {
             const R = 6371; 
@@ -896,7 +833,43 @@ function aprobarOrdenGestor(firebaseId) {
                 btnHistorial.classList.add('active');
                 btnActivas.classList.remove('active');
                 secHistorial.style.display = 'block';
-                secHistorial.style.display = 'none';
+                secActivas.style.display = 'none'; // Corregido para que muestre el historial correctamente
+            }
+        }
+
+        // CONTROL DE PESTAÑAS DEL GESTOR (Nuevas Órdenes vs Historial)
+        function switchGestorTab(tabName) {
+            const btnNuevas = document.getElementById('gestorTabNuevasBtn');
+            const btnTodas = document.getElementById('gestorTabTodasBtn');
+            const secNuevas = document.getElementById('gestorTabNuevas');
+            const secTodas = document.getElementById('gestorTabTodas');
+
+            if (tabName === 'nuevas') {
+                btnNuevas.classList.add('active');
+                btnTodas.classList.remove('active');
+                secNuevas.style.display = 'block';
+                secTodas.style.display = 'none';
+            } else {
+                btnTodas.classList.add('active');
+                btnNuevas.classList.remove('active');
+                secTodas.style.display = 'block';
+                secNuevas.style.display = 'none';
+            }
+        }
+
+        // MODO TV PANTALLA COMPLETA (Abarca todo el panel de operaciones)
+        function toggleTVMode() {
+            const tvContainer = document.getElementById('tvDashboardContainer');
+            if (!document.fullscreenElement) {
+                if (tvContainer.requestFullscreen) {
+                    tvContainer.requestFullscreen();
+                } else if (tvContainer.webkitRequestFullscreen) {
+                    tvContainer.webkitRequestFullscreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
             }
         }
 
@@ -1032,6 +1005,50 @@ function aprobarOrdenGestor(firebaseId) {
             alert(`✅ Orden #${newOrder.id} enviada correctamente a ${newOrder.driver}`);
         }
 
+        // RENDERIZAR NUEVAS ÓRDENES EN LA PESTAÑA DEL GESTOR
+        function renderNuevasOrdenes(filteredOrders) {
+            const tbodyNuevas = document.getElementById('newOrdersTableBody');
+            const countSpan = document.getElementById('countNuevasOrders');
+            if (!tbodyNuevas) return;
+
+            const nuevas = filteredOrders.filter(o => o.status === 'Pendiente');
+            countSpan.textContent = nuevas.length;
+
+            tbodyNuevas.innerHTML = '';
+
+            if (nuevas.length === 0) {
+                tbodyNuevas.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#64748b; padding:1.5rem;">No hay nuevas órdenes pendientes por revisar. 👍</td></tr>`;
+                return;
+            }
+
+            nuevas.slice().reverse().forEach(o => {
+                let prodACobrar = o.productCollect === 'si' ? o.productPrice : 0;
+                let fleteACobrar = o.payer === 'cliente' ? o.shippingPrice : 0;
+                let totalCliente = prodACobrar + fleteACobrar;
+
+                let notesHtml = o.notes ? `<br><small style="color:#d97706;">📌 ${o.notes}</small>` : '';
+
+                let tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><b>#${o.id}</b><br><small style="color:#64748b;">${o.date || ''}</small></td>
+                    <td><b>${o.client}</b><br><small>📍 ${o.address}</small></td>
+                    <td><b>${o.restaurant}</b><br><small>${o.description}</small>${notesHtml}</td>
+                    <td><b>Q${totalCliente.toFixed(2)}</b><br><small>${o.payer === 'restaurante' ? 'Flete Gratis' : 'Flete Cliente'}</small></td>
+                    <td>
+                        <button class="btn btn-success" style="padding: 6px 10px; font-size: 0.75rem;" onclick="aprobarOrdenGestor('${o.firebaseId}')">
+                            ✅ Confirmar y Asignar
+                        </button>
+                    </td>
+                `;
+                tbodyNuevas.appendChild(tr);
+            });
+        }
+
+        function aprobarOrdenGestor(firebaseId) {
+            db.ref(`orders/${firebaseId}`).update({ status: 'Aceptado' });
+            alert("¡Pedido confirmado y enviado al motorista!");
+        }
+
         function updateGestorView() {
             let todayStr = getTodayString();
             let filterRange = document.getElementById('gestorDateFilter')?.value || 'today';
@@ -1052,15 +1069,12 @@ function aprobarOrdenGestor(firebaseId) {
             document.getElementById('kpiPendientes').textContent = filteredOrders.filter(o => o.status === 'Pendiente').length;
             document.getElementById('kpiEnRuta').textContent = filteredOrders.filter(o => o.status === 'En Ruta').length;
 
-            let fletesRecaudados = 0; // SOLO LO RECAUDADO DE FLETES (GANANCIA DASH)
-            let efectivoTotalMano = 0; // TODO EL EFECTIVO EN MANO (PRODUCTO + FLETE)
+            let fletesRecaudados = 0; 
+            let efectivoTotalMano = 0; 
 
             filteredOrders.forEach(o => {
                 if (o.status === 'Entregado') {
-                    // SUMA SOLO FLETES
                     fletesRecaudados += (o.shippingPrice || 0);
-
-                    // SUMA EFECTIVO COMPLETO
                     let cobroProd = o.productCollect === 'si' ? o.productPrice : 0;
                     let cobroFlete = o.payer === 'cliente' ? o.shippingPrice : 0;
                     efectivoTotalMano += (cobroProd + cobroFlete);
@@ -1076,6 +1090,10 @@ function aprobarOrdenGestor(firebaseId) {
             document.getElementById('kpiEfectivoMano').textContent = `Q${efectivoTotalMano.toFixed(2)}`;
             document.getElementById('kpiKmTotal').textContent = `${totalKmFlota.toFixed(1)} km`;
 
+            // RENDERIZAR TABLA DE NUEVAS ÓRDENES
+            renderNuevasOrdenes(filteredOrders);
+
+            // RENDERIZAR TABLA DE CONTROL GENERAL (Envíos en Curso / Historial)
             let tbody = document.getElementById('ordersTableBody');
             tbody.innerHTML = '';
 
@@ -1257,7 +1275,7 @@ function aprobarOrdenGestor(firebaseId) {
                     let notesHtml = o.notes ? `<br><small style="color:#d97706;">📌 ${o.notes}</small>` : '';
 
                     let item = document.createElement('div');
-                    item.className = 'completed-item';
+                    item.classNames = 'completed-item';
                     item.innerHTML = `
                         <div>
                             <p style="font-weight: 700; font-size: 0.95rem; color: #0f172a;">👤 ${o.client} <small style="color:#64748b; font-weight:normal;">(${o.date || 'Fecha N/A'})</small></p>
@@ -1283,20 +1301,6 @@ function aprobarOrdenGestor(firebaseId) {
                 db.ref(`driversLocation/${loggedDriverName}`).update({ status: statusText });
             }
         }
-        function toggleTVMode() {
-    const mapCard = document.getElementById('map').parentElement;
-    if (!document.fullscreenElement) {
-        if (mapCard.requestFullscreen) {
-            mapCard.requestFullscreen();
-        } else if (mapCard.webkitRequestFullscreen) {
-            mapCard.webkitRequestFullscreen();
-        }
-    } else {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        }
-    }
-}
     </script>
 </body>
 </html>
