@@ -215,7 +215,7 @@
 
         #map { width: 100%; height: 380px; border-radius: 8px; }
 
-        /* ESTILO CUANDO EL MAPA ESTÁ EN PANTALLA COMPLETA */
+        /* ESTILO MODO TV EXCLUSIVO MAPA */
         #mapCardContainer:fullscreen {
             width: 100vw !important;
             height: 100vh !important;
@@ -261,7 +261,7 @@
         .badge-en-ruta { background: #e0f2fe; color: #0284c7; }
         .badge-entregado { background: #d1fae5; color: #059669; }
 
-        /* SUBMENÚ PESTAÑAS CONDUCTOR / GESTOR */
+        /* PESTAÑAS */
         .driver-tabs {
             display: flex;
             gap: 10px;
@@ -367,6 +367,10 @@
         .form-group label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.3rem; }
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        .driver-select-tbl {
+            padding: 4px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 0.8rem; width: 100%; margin-bottom: 4px; font-weight: 600;
+        }
 
         /* ETIQUETA EN EL MAPA */
         .driver-map-badge {
@@ -487,12 +491,10 @@
                     <h3>En Ruta</h3>
                     <p id="kpiEnRuta">0</p>
                 </div>
-                <!-- RECAUDADO DASH (SOLO FLETES DE ENTREGAS FINALIZADAS) -->
                 <div class="kpi-card" style="border-left-color: var(--primary);">
                     <h3>Recaudado (Solo Fletes)</h3>
                     <p id="kpiFletesRecaudados">Q0.00</p>
                 </div>
-                <!-- EFECTIVO TOTAL EN MANO DE CONDUCTORES (COMIDA + FLETES) -->
                 <div class="kpi-card" style="border-left-color: var(--accent);">
                     <h3>Efectivo en Mano (Total)</h3>
                     <p id="kpiEfectivoMano">Q0.00</p>
@@ -504,7 +506,7 @@
             </div>
 
             <div class="dashboard-grid">
-                <!-- MAPA CON BOTÓN DE MODO TV EXCLUSIVO -->
+                <!-- MAPA CON MODO TV EXCLUSIVO -->
                 <div class="card" id="mapCardContainer">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <h2 style="margin: 0;">🗺️ Monitoreo Satelital de Flota en Tiempo Real</h2>
@@ -513,7 +515,7 @@
                     <div id="map"></div>
                 </div>
 
-                <!-- PANEL DE GESTIÓN DE ÓRDENES Y MANDADOS CON PESTAÑAS -->
+                <!-- PANEL DE GESTIÓN DE ÓRDENES Y MANDADOS -->
                 <div class="card">
                     <div class="driver-tabs" style="margin-bottom: 1rem;">
                         <button id="gestorTabNuevasBtn" class="driver-tab-btn active" onclick="switchGestorTab('nuevas')">
@@ -527,7 +529,7 @@
                         </button>
                     </div>
 
-                    <!-- PESTAÑA 1: NUEVAS ÓRDENES (CON PRECIO EDITABLE DE FLETE) -->
+                    <!-- PESTAÑA 1: NUEVAS ÓRDENES (CON PRECIO EDITABLE Y ASIGNACIÓN DE CONDUCTOR) -->
                     <div id="gestorTabNuevas">
                         <div class="table-responsive">
                             <table>
@@ -535,7 +537,7 @@
                                     <tr>
                                         <th>ID / Cliente</th>
                                         <th>Restaurante / Detalle</th>
-                                        <th>Ajustar Flete (Q)</th>
+                                        <th>Flete (Q) & Conductor</th>
                                         <th>Acción</th>
                                     </tr>
                                 </thead>
@@ -546,16 +548,16 @@
                         </div>
                     </div>
 
-                    <!-- PESTAÑA 2: MANDADOS Y ENCARGOS -->
+                    <!-- PESTAÑA 2: MANDADOS Y ENCARGOS (CON PRECIO EDITABLE Y ASIGNACIÓN) -->
                     <div id="gestorTabMandados" style="display: none;">
                         <div class="table-responsive">
                             <table>
                                 <thead>
                                     <tr>
                                         <th>Código / Cliente</th>
-                                        <th>Origen / Destino</th>
-                                        <th>Detalle Encargo</th>
-                                        <th>Estado / Acción</th>
+                                        <th>Origen / Destino / Detalle</th>
+                                        <th>Flete (Q) & Conductor</th>
+                                        <th>Acción</th>
                                     </tr>
                                 </thead>
                                 <tbody id="mandadosTableBody">
@@ -702,6 +704,7 @@
                 <div class="form-group">
                     <label>Asignar Conductor</label>
                     <select id="assignedDriver">
+                        <option value="TODOS">📢 Enviar a Todos (Libre)</option>
                         <option value="Carlos Villalobos">Carlos Villalobos (Pulsar 150)</option>
                         <option value="Nelson Pérez">Nelson Pérez (Rowor F100)</option>
                         <option value="José Morales">José Morales (Moto Local)</option>
@@ -720,7 +723,6 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
-        // CONFIGURACIÓN UNIFICADA A PROYECTO PRINCIPAL (dash-delivery-502)
         const firebaseConfig = {
             apiKey: "AIzaSyArxtD5VjH4YH1T39dFn0yEyp9NAh42tXM",
             authDomain: "dash-delivery-502.firebaseapp.com",
@@ -737,7 +739,6 @@
         }
         const db = firebase.database();
 
-        // COORDENADAS BASE: NUEVA SANTA ROSA, GUATEMALA
         const NUEVA_SANTA_ROSA_COORDS = [14.3811, -90.2761];
 
         const PIN_GESTOR = "1234";
@@ -783,7 +784,6 @@
             return R * c;
         }
 
-        // ESCUCHAR ÓRDENES
         db.ref('orders').on('value', (snapshot) => {
             const data = snapshot.val();
             orders = [];
@@ -796,7 +796,6 @@
             if (activeRole === 'conductor') renderConductorOrders();
         });
 
-        // ESCUCHAR MANDADOS
         db.ref('encargos_mandados').on('value', (snapshot) => {
             const data = snapshot.val();
             mandados = [];
@@ -905,7 +904,6 @@
             }
         }
 
-        // CONTROL DE PESTAÑAS DEL GESTOR
         function switchGestorTab(tabName) {
             const btnNuevas = document.getElementById('gestorTabNuevasBtn');
             const btnMandados = document.getElementById('gestorTabMandadosBtn');
@@ -934,7 +932,6 @@
             }
         }
 
-        // MODO TV EXCLUSIVO PARA EL MAPA (Móvil, Laptop y TV)
         function toggleTVMode() {
             const mapContainer = document.getElementById('mapCardContainer');
             if (!document.fullscreenElement) {
@@ -1084,10 +1081,10 @@
             db.ref('orders').push(newOrder);
             closeOrderModal();
             document.getElementById('orderForm').reset();
-            alert(`✅ Orden #${newOrder.id} enviada correctamente a ${newOrder.driver}`);
+            alert(`✅ Orden #${newOrder.id} creada correctamente`);
         }
 
-        // RENDERIZAR NUEVAS ÓRDENES CON PRECIO DE FLETE EDITABLE
+        // RENDERIZAR NUEVAS ÓRDENES (FLETE EDITABLE + SELECCIÓN DE CONDUCTOR)
         function renderNuevasOrdenes(filteredOrders) {
             const tbodyNuevas = document.getElementById('newOrdersTableBody');
             const countSpan = document.getElementById('countNuevasOrders');
@@ -1111,11 +1108,19 @@
                     <td><b>#${o.id}</b><br><small style="color:#64748b;">${o.date || ''}</small><br><b>${o.client}</b><br><small>📍 ${o.address}</small></td>
                     <td><b>${o.restaurant}</b><br><small>${o.description}</small>${notesHtml}</td>
                     <td>
-                        <input type="number" step="1" id="edit-flete-${o.firebaseId}" value="${o.shippingPrice || 20}" style="width: 70px; padding: 4px; border-radius: 4px; border: 1px solid #cbd5e1; font-weight: bold; text-align: center;">
+                        <label style="font-size:10px; font-weight:bold;">Flete Q:</label>
+                        <input type="number" step="1" id="edit-flete-${o.firebaseId}" value="${o.shippingPrice || 20}" class="driver-select-tbl" style="text-align:center;">
+                        <label style="font-size:10px; font-weight:bold;">Asignar:</label>
+                        <select id="select-driver-${o.firebaseId}" class="driver-select-tbl">
+                            <option value="TODOS" ${o.driver === 'TODOS' ? 'selected' : ''}>📢 Todos (Libre)</option>
+                            <option value="Carlos Villalobos" ${o.driver === 'Carlos Villalobos' ? 'selected' : ''}>Carlos Villalobos</option>
+                            <option value="Nelson Pérez" ${o.driver === 'Nelson Pérez' ? 'selected' : ''}>Nelson Pérez</option>
+                            <option value="José Morales" ${o.driver === 'José Morales' ? 'selected' : ''}>José Morales</option>
+                        </select>
                     </td>
                     <td>
-                        <button class="btn btn-success" style="padding: 6px 10px; font-size: 0.75rem;" onclick="aprobarOrdenConPrecioEditado('${o.firebaseId}')">
-                            ✅ Confirmar y Asignar
+                        <button class="btn btn-success" style="padding: 6px 10px; font-size: 0.75rem; width:100%;" onclick="aprobarOrdenConPrecioEditado('${o.firebaseId}')">
+                            ✅ Confirmar
                         </button>
                     </td>
                 `;
@@ -1123,19 +1128,22 @@
             });
         }
 
-        // APROBAR ORDEN GUARDANDO EL FLETE AJUSTADO POR EL GESTOR
         function aprobarOrdenConPrecioEditado(firebaseId) {
             let inputFlete = document.getElementById(`edit-flete-${firebaseId}`);
+            let selectDriver = document.getElementById(`select-driver-${firebaseId}`);
+            
             let nuevoFlete = inputFlete ? parseFloat(inputFlete.value) || 0 : 20;
+            let conductorElegido = selectDriver ? selectDriver.value : 'TODOS';
 
             db.ref(`orders/${firebaseId}`).update({
                 shippingPrice: nuevoFlete,
+                driver: conductorElegido,
                 status: 'Aceptado'
             });
-            alert(`¡Pedido confirmado con flete de Q${nuevoFlete.toFixed(2)} y enviado al motorista!`);
+            alert(`¡Pedido confirmado, flete de Q${nuevoFlete.toFixed(2)} asignado a: ${conductorElegido}!`);
         }
 
-        // RENDERIZAR MANDADOS
+        // RENDERIZAR MANDADOS (FLETE EDITABLE + SELECCIÓN DE CONDUCTOR)
         function renderMandadosGestor() {
             const tbodyMandados = document.getElementById('mandadosTableBody');
             const countSpan = document.getElementById('countMandadosOrders');
@@ -1150,18 +1158,67 @@
             }
 
             mandados.slice().reverse().forEach(m => {
+                let currentPrecio = m.shippingPrice || 25;
+                let currentDriver = m.driver || 'TODOS';
+
                 let tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><b>${m.codigo || 'MND'}</b><br>${m.clienteNombre}<br><small>📞 ${m.clienteTelefono}</small></td>
-                    <td><small><b>Origen:</b> ${m.origen}</small><br><small><b>Destino:</b> ${m.destino}</small></td>
-                    <td><small>${m.detalle}</small><br><small style="color:#d97706;"><b>Modalidad:</b> ${m.modalidad}</small></td>
+                    <td><small><b>Ori:</b> ${m.origen}</small><br><small><b>Des:</b> ${m.destino}</small><br><small style="color:#d97706;"><b>Detalle:</b> ${m.detalle}</small></td>
                     <td>
-                        <span class="badge badge-pendiente">${m.estado || 'Pendiente'}</span>
-                        <button class="btn btn-primary" style="padding: 4px 8px; font-size: 0.7rem; margin-top: 4px; display:block;" onclick="window.open('https://wa.me/502${m.clienteTelefono}?text=Hola%20${encodeURIComponent(m.clienteNombre)},%20sobre%20su%20mandado%20${m.codigo}:', '_blank')">💬 Contactar</button>
+                        <label style="font-size:10px; font-weight:bold;">Flete Q:</label>
+                        <input type="number" step="1" id="edit-mandado-flete-${m.firebaseId}" value="${currentPrecio}" class="driver-select-tbl" style="text-align:center;">
+                        <label style="font-size:10px; font-weight:bold;">Asignar:</label>
+                        <select id="select-mandado-driver-${m.firebaseId}" class="driver-select-tbl">
+                            <option value="TODOS" ${currentDriver === 'TODOS' ? 'selected' : ''}>📢 Todos (Libre)</option>
+                            <option value="Carlos Villalobos" ${currentDriver === 'Carlos Villalobos' ? 'selected' : ''}>Carlos Villalobos</option>
+                            <option value="Nelson Pérez" ${currentDriver === 'Nelson Pérez' ? 'selected' : ''}>Nelson Pérez</option>
+                            <option value="José Morales" ${currentDriver === 'José Morales' ? 'selected' : ''}>José Morales</option>
+                        </select>
+                    </td>
+                    <td>
+                        <button class="btn btn-success" style="padding: 6px 10px; font-size: 0.75rem; width:100%;" onclick="aprobarMandadoGestor('${m.firebaseId}')">
+                            ✅ Despachar
+                        </button>
                     </td>
                 `;
                 tbodyMandados.appendChild(tr);
             });
+        }
+
+        function aprobarMandadoGestor(firebaseId) {
+            let inputFlete = document.getElementById(`edit-mandado-flete-${firebaseId}`);
+            let selectDriver = document.getElementById(`select-mandado-driver-${firebaseId}`);
+
+            let nuevoFlete = inputFlete ? parseFloat(inputFlete.value) || 0 : 25;
+            let conductorElegido = selectDriver ? selectDriver.value : 'TODOS';
+
+            // Convertimos el mandado en formato de orden regular para que aparezca en el panel del conductor
+            let mandadoObj = mandados.find(m => m.firebaseId === firebaseId);
+            if (!mandadoObj) return;
+
+            let ordenConvertida = {
+                id: mandadoObj.codigo.replace('MND-', ''),
+                date: getTodayString(),
+                timestamp: Date.now(),
+                client: mandadoObj.clienteNombre,
+                address: `[Origen: ${mandadoObj.origen}] -> [Destino: ${mandadoObj.destino}]`,
+                restaurant: "ENCARGO / MANDADO",
+                description: mandadoObj.detalle,
+                notes: `Tel: ${mandadoObj.clienteTelefono} | Modalidad: ${mandadoObj.modalidad}`,
+                productPrice: 0,
+                productCollect: 'no',
+                shippingPrice: nuevoFlete,
+                payer: 'cliente',
+                driver: conductorElegido,
+                status: 'Aceptado'
+            };
+
+            // Guardamos en orders y eliminamos o actualizamos en encargos_mandados
+            db.ref('orders').push(ordenConvertida);
+            db.ref(`encargos_mandados/${firebaseId}`).update({ estado: 'Asignado' });
+
+            alert(`¡Mandado despachado con flete de Q${nuevoFlete.toFixed(2)} a: ${conductorElegido}!`);
         }
 
         function updateGestorView() {
@@ -1305,7 +1362,8 @@
             let now = Date.now();
             let msInDay = 86400000;
 
-            let driverAllOrders = orders.filter(o => o.driver === loggedDriverName);
+            // El conductor ve las órdenes asignadas a su nombre O las que están en "TODOS"
+            let driverAllOrders = orders.filter(o => o.driver === loggedDriverName || o.driver === 'TODOS');
 
             let driverActiveOrders = driverAllOrders.filter(o => o.status !== 'Entregado');
 
@@ -1327,7 +1385,7 @@
             document.getElementById('driverKpiDistance').textContent = `${myDistance.toFixed(1)} km`;
 
             if (driverActiveOrders.length === 0) {
-                containerActivas.innerHTML = `<div class="card" style="grid-column: 1/-1; text-align:center; padding: 2rem;"><p>No tienes órdenes pendientes asignadas actualmente. 👍</p></div>`;
+                containerActivas.innerHTML = `<div class="card" style="grid-column: 1/-1; text-align:center; padding: 2rem;"><p>No hay órdenes activas disponibles actualmente. 👍</p></div>`;
             } else {
                 driverActiveOrders.forEach(o => {
                     let cobroProducto = o.productCollect === 'si' ? o.productPrice : 0;
@@ -1407,7 +1465,10 @@
         }
 
         function updateOrderStatus(firebaseId, newStatus) {
-            db.ref(`orders/${firebaseId}`).update({ status: newStatus });
+            db.ref(`orders/${firebaseId}`).update({ 
+                status: newStatus,
+                driver: loggedDriverName // Al aceptarlo de la bolsa general ("TODOS"), se asigna al motorista que lo tomó
+            });
 
             if (loggedDriverName) {
                 let statusText = newStatus === 'En Ruta' ? 'En ruta' : 'En espera';
