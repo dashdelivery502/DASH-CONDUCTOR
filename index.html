@@ -79,7 +79,7 @@
 
         .table-responsive { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
-        th, td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
+        th, td { padding: 10px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
         th { background: #f8fafc; color: #475569; font-weight: 600; }
 
         .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
@@ -111,7 +111,6 @@
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-        /* MARCADOR CON ETIQUETA Y TEXTO */
         .driver-map-label {
             background: #0f172a; color: #ffffff; padding: 3px 8px; border-radius: 6px;
             font-size: 11px; font-weight: bold; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
@@ -128,6 +127,7 @@
 
         .search-box-orders { width: 100%; padding: 8px 14px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 0.85rem; margin-bottom: 12px; outline: none; }
         .driver-select-tbl { padding: 4px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 0.8rem; width: 100%; margin-bottom: 4px; font-weight: 600; }
+        .detail-tag { background: #e2e8f0; color: #334155; padding: 2px 6px; border-radius: 4px; font-size: 0.72rem; font-weight: 600; }
     </style>
 </head>
 <body>
@@ -218,7 +218,7 @@
                         <option value="all">Historial Completo</option>
                     </select>
                     <button class="btn btn-info" onclick="openMapModal()">🗺️ Abrir Mapa</button>
-                    <button class="btn btn-success" onclick="downloadDailyCSV()">📥 Descargar CSV</button>
+                    <button class="btn btn-success" onclick="downloadDailyCSV()">📥 Descargar CSV Excel</button>
                     <button class="btn btn-primary" onclick="openOrderModal()">+ Crear Nueva Orden</button>
                 </div>
             </div>
@@ -262,7 +262,7 @@
                 <div id="gestorTabNuevas">
                     <div class="table-responsive">
                         <table>
-                            <thead><tr><th>ID / Cliente</th><th>Restaurante / Detalle</th><th>Flete / Conductor</th><th>Acción</th></tr></thead>
+                            <thead><tr><th>ID / Cliente / Destino</th><th>Restaurante / Detalle</th><th>Desglose de Cobro</th><th>Ajustar Flete / Conductor</th><th>Acción</th></tr></thead>
                             <tbody id="newOrdersTableBody"></tbody>
                         </table>
                     </div>
@@ -272,7 +272,7 @@
                 <div id="gestorTabRecogiendo" style="display: none;">
                     <div class="table-responsive">
                         <table>
-                            <thead><tr><th>ID / Cliente</th><th>Origen / Detalle</th><th>Conductor Asignado</th><th>Estado</th></tr></thead>
+                            <thead><tr><th>ID / Cliente / Destino</th><th>Origen / Detalle</th><th>Desglose</th><th>Conductor Asignado</th><th>Estado</th></tr></thead>
                             <tbody id="recogiendoTableBody"></tbody>
                         </table>
                     </div>
@@ -282,7 +282,7 @@
                 <div id="gestorTabBodega" style="display: none;">
                     <div class="table-responsive">
                         <table>
-                            <thead><tr><th>ID / Cliente</th><th>Detalle de Paquete</th><th>Conductor</th><th>Acción Rápida</th></tr></thead>
+                            <thead><tr><th>ID / Cliente / Destino</th><th>Detalle de Paquete</th><th>Desglose</th><th>Conductor</th><th>Acción Rápida</th></tr></thead>
                             <tbody id="bodegaTableBody"></tbody>
                         </table>
                     </div>
@@ -292,7 +292,7 @@
                 <div id="gestorTabEntregando" style="display: none;">
                     <div class="table-responsive">
                         <table>
-                            <thead><tr><th>ID / Cliente</th><th>Destino</th><th>Conductor</th><th>Estado Actual</th></tr></thead>
+                            <thead><tr><th>ID / Cliente / Destino</th><th>Restaurante / Detalle</th><th>Desglose</th><th>Conductor</th><th>Estado Actual</th></tr></thead>
                             <tbody id="entregandoTableBody"></tbody>
                         </table>
                     </div>
@@ -302,7 +302,7 @@
                 <div id="gestorTabMandados" style="display: none;">
                     <div class="table-responsive">
                         <table>
-                            <thead><tr><th>Código</th><th>Origen / Destino</th><th>Flete / Conductor</th><th>Acción</th></tr></thead>
+                            <thead><tr><th>Código / Cliente</th><th>Origen -> Destino</th><th>Ajustar Flete / Conductor</th><th>Acción</th></tr></thead>
                             <tbody id="mandadosTableBody"></tbody>
                         </table>
                     </div>
@@ -322,7 +322,7 @@
                 <div id="gestorTabTodas" style="display: none;">
                     <div class="table-responsive">
                         <table>
-                            <thead><tr><th>ID</th><th>Cliente</th><th>Conductor</th><th>Total</th><th>Estado</th></tr></thead>
+                            <thead><tr><th>ID</th><th>Cliente / Destino</th><th>Conductor</th><th>Total Cobrado</th><th>Estado</th></tr></thead>
                             <tbody id="ordersTableBody"></tbody>
                         </table>
                     </div>
@@ -410,13 +410,19 @@
             <h2 style="margin-bottom: 1rem; font-size: 1.2rem;">Armar Orden para Conductor</h2>
             <form id="orderForm" onsubmit="saveOrder(event)">
                 <div class="form-group"><label>Cliente</label><input type="text" id="clientName" required></div>
-                <div class="form-group"><label>Dirección</label><input type="text" id="clientAddress" required></div>
-                <div class="form-group"><label>Restaurante</label><input type="text" id="restaurantName" required></div>
+                <div class="form-group"><label>Dirección de Destino</label><input type="text" id="clientAddress" required placeholder="Ej: Barrio El Centro, Aldea Amberes..."></div>
+                <div class="form-group"><label>Restaurante / Comercio</label><input type="text" id="restaurantName" required></div>
                 <div class="form-group"><label>Contenido</label><input type="text" id="orderDescription" required></div>
                 <div class="form-group"><label>Indicaciones</label><textarea id="orderNotes" rows="2"></textarea></div>
                 <div class="form-row">
                     <div class="form-group"><label>Precio Prod. (Q)</label><input type="number" step="0.01" id="productPrice" value="50.00"></div>
-                    <div class="form-group"><label>Cobrar Prod.?</label><select id="productCollect"><option value="si">Sí</option><option value="no">No</option></select></div>
+                    <div class="form-group"><label>Método de Pago</label>
+                        <select id="paymentMethod">
+                            <option value="Efectivo">💵 Efectivo (Contra Entrega)</option>
+                            <option value="Transferencia">🏦 Transferencia Bancaria</option>
+                            <option value="Tarjeta">💳 Tarjeta de Crédito/Débito</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="form-row">
                     <div class="form-group"><label>Flete (Q)</label><input type="number" step="0.01" id="shippingPrice" value="20.00" required></div>
@@ -461,6 +467,7 @@
 
         let pendingRole = null, activeRole = null, loggedDriverName = null, map = null, markers = {}, watchId = null;
         let orders = [], mandados = [], driversLocation = {}, incidenciasList = [];
+        let currentFilteredOrders = [];
         let lastLat = null, lastLng = null;
 
         function getTodayString() {
@@ -678,7 +685,7 @@
                 description: document.getElementById('orderDescription').value,
                 notes: document.getElementById('orderNotes').value.trim(),
                 productPrice: parseFloat(document.getElementById('productPrice').value) || 0,
-                productCollect: document.getElementById('productCollect').value,
+                paymentMethod: document.getElementById('paymentMethod').value,
                 shippingPrice: parseFloat(document.getElementById('shippingPrice').value) || 0,
                 payer: document.getElementById('shippingPayer').value,
                 driver: document.getElementById('assignedDriver').value,
@@ -701,7 +708,7 @@
             let filterRange = document.getElementById('gestorDateFilter')?.value || 'today';
             let todayStr = getTodayString(), now = Date.now(), ms = 86400000;
 
-            let filtered = orders.filter(o => {
+            currentFilteredOrders = orders.filter(o => {
                 let t = o.timestamp || new Date(o.date).getTime() || 0;
                 let diff = (now - t) / ms;
                 if (filterRange === 'today') return o.date === todayStr;
@@ -709,30 +716,32 @@
                 return true;
             });
 
-            document.getElementById('kpiTotal').textContent = filtered.length;
-            document.getElementById('kpiPendientes').textContent = filtered.filter(o => o.status === 'Pendiente').length;
-            document.getElementById('kpiRecogiendo').textContent = filtered.filter(o => o.status === 'En Ruta: Recogiendo').length;
-            document.getElementById('kpiBodega').textContent = filtered.filter(o => o.status === 'En Bodega').length;
-            document.getElementById('kpiEntregando').textContent = filtered.filter(o => o.status === 'En Ruta: Entregando').length;
-            document.getElementById('kpiRechazados').textContent = filtered.filter(o => o.status === 'Rechazado').length;
+            document.getElementById('kpiTotal').textContent = currentFilteredOrders.length;
+            document.getElementById('kpiPendientes').textContent = currentFilteredOrders.filter(o => o.status === 'Pendiente' || o.status === 'Aceptado').length;
+            document.getElementById('kpiRecogiendo').textContent = currentFilteredOrders.filter(o => o.status === 'En Ruta: Recogiendo').length;
+            document.getElementById('kpiBodega').textContent = currentFilteredOrders.filter(o => o.status === 'En Bodega').length;
+            document.getElementById('kpiEntregando').textContent = currentFilteredOrders.filter(o => o.status === 'En Ruta: Entregando').length;
+            document.getElementById('kpiRechazados').textContent = currentFilteredOrders.filter(o => o.status === 'Rechazado').length;
 
             let fletes = 0, efectivo = 0;
-            filtered.forEach(o => {
+            currentFilteredOrders.forEach(o => {
                 if (o.status === 'Entregado') {
                     fletes += (o.shippingPrice || 0);
-                    efectivo += ((o.productCollect === 'si' ? o.productPrice : 0) + (o.payer === 'cliente' ? o.shippingPrice : 0));
+                    let prodCobrar = (o.paymentMethod === 'Efectivo') ? (o.productPrice || 0) : 0;
+                    let fleteCobrar = (o.payer === 'cliente') ? (o.shippingPrice || 0) : 0;
+                    efectivo += (prodCobrar + fleteCobrar);
                 }
             });
 
             document.getElementById('kpiFletesRecaudados').textContent = `Q${fletes.toFixed(2)}`;
             document.getElementById('kpiEfectivoMano').textContent = `Q${efectivo.toFixed(2)}`;
 
-            renderNuevasGestor(filtered);
-            renderRecogiendoGestor(filtered);
-            renderBodegaGestor(filtered);
-            renderEntregandoGestor(filtered);
-            renderRechazadosGestor(filtered);
-            renderHistorialGestor(filtered);
+            renderNuevasGestor(currentFilteredOrders);
+            renderRecogiendoGestor(currentFilteredOrders);
+            renderBodegaGestor(currentFilteredOrders);
+            renderEntregandoGestor(currentFilteredOrders);
+            renderRechazadosGestor(currentFilteredOrders);
+            renderHistorialGestor(currentFilteredOrders);
             if (map) updateMapMarkers();
         }
 
@@ -744,25 +753,37 @@
             tbody.innerHTML = '';
 
             if (nuevas.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#64748b; padding:1.5rem;">No hay órdenes nuevas o pendientes. 👍</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#64748b; padding:1.5rem;">No hay órdenes nuevas o pendientes. 👍</td></tr>`;
                 return;
             }
 
             nuevas.slice().reverse().forEach(o => {
+                let metodo = o.paymentMethod || 'Efectivo';
+                let prodQ = (o.productPrice || 0).toFixed(2);
+
                 let tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td><b>#${o.id}</b><br>${o.client}</td>
+                    <td>
+                        <b>#${o.id}</b> - ${o.client}<br>
+                        <small style="color:#0284c7;">📍 <b>Destino:</b> ${o.address}</small>
+                    </td>
                     <td><b>${o.restaurant}</b><br><small>${o.description}</small></td>
                     <td>
+                        <span class="detail-tag">Prod: Q${prodQ}</span><br>
+                        <span class="detail-tag">Pago: ${metodo}</span>
+                    </td>
+                    <td>
+                        <label style="font-size:0.7rem; font-weight:bold;">Flete Q:</label>
                         <input type="number" id="flete-${o.firebaseId}" value="${o.shippingPrice || 20}" class="driver-select-tbl">
+                        <label style="font-size:0.7rem; font-weight:bold;">Conductor:</label>
                         <select id="driver-${o.firebaseId}" class="driver-select-tbl">
-                            <option value="TODOS">Todos (Libre)</option>
-                            <option value="Carlos Villalobos">Carlos Villalobos</option>
-                            <option value="Nelson Pérez">Nelson Pérez</option>
-                            <option value="José Morales">José Morales</option>
+                            <option value="TODOS" ${o.driver === 'TODOS' ? 'selected' : ''}>Todos (Libre)</option>
+                            <option value="Carlos Villalobos" ${o.driver === 'Carlos Villalobos' ? 'selected' : ''}>Carlos Villalobos</option>
+                            <option value="Nelson Pérez" ${o.driver === 'Nelson Pérez' ? 'selected' : ''}>Nelson Pérez</option>
+                            <option value="José Morales" ${o.driver === 'José Morales' ? 'selected' : ''}>José Morales</option>
                         </select>
                     </td>
-                    <td><button class="btn btn-success" style="font-size:0.75rem; width:100%;" onclick="confirmarOrden('${o.firebaseId}')">✅ Asignar</button></td>
+                    <td><button class="btn btn-success" style="font-size:0.75rem; width:100%; margin-top:10px;" onclick="confirmarOrden('${o.firebaseId}')">✅ Guardar / Asignar</button></td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -772,7 +793,7 @@
             let f = parseFloat(document.getElementById(`flete-${id}`).value) || 20;
             let d = document.getElementById(`driver-${id}`).value;
             db.ref(`orders/${id}`).update({ shippingPrice: f, driver: d, status: 'Aceptado' });
-            alert("Orden asignada correctamente.");
+            alert("Orden actualizada y asignada a " + d);
         }
 
         function renderRecogiendoGestor(filtered) {
@@ -782,12 +803,18 @@
             count.textContent = list.length;
             tbody.innerHTML = '';
             if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#64748b; padding:1.5rem;">No hay motoristas recogiendo pedidos.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#64748b; padding:1.5rem;">No hay motoristas recogiendo pedidos.</td></tr>`;
                 return;
             }
             list.forEach(o => {
                 let tr = document.createElement('tr');
-                tr.innerHTML = `<td><b>#${o.id}</b><br>${o.client}</td><td><b>${o.restaurant}</b><br><small>${o.description}</small></td><td>${o.driver}</td><td><span class="badge badge-recoleccion">En Recolección</span></td>`;
+                tr.innerHTML = `
+                    <td><b>#${o.id}</b> - ${o.client}<br><small style="color:#0284c7;">📍 ${o.address}</small></td>
+                    <td><b>${o.restaurant}</b><br><small>${o.description}</small></td>
+                    <td><span class="detail-tag">Prod: Q${(o.productPrice||0).toFixed(2)}</span><br><span class="detail-tag">${o.paymentMethod||'Efectivo'}</span></td>
+                    <td><b>${o.driver}</b></td>
+                    <td><span class="badge badge-recoleccion">En Recolección</span></td>
+                `;
                 tbody.appendChild(tr);
             });
         }
@@ -799,19 +826,25 @@
             count.textContent = list.length;
             tbody.innerHTML = '';
             if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#64748b; padding:1.5rem;">No hay paquetes almacenados en bodega.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#64748b; padding:1.5rem;">No hay paquetes almacenados en bodega.</td></tr>`;
                 return;
             }
             list.forEach(o => {
                 let tr = document.createElement('tr');
-                tr.innerHTML = `<td><b>#${o.id}</b><br>${o.client}</td><td>${o.description}</td><td>${o.driver}</td><td><button class="btn btn-info" style="font-size:0.75rem;" onclick="forzarSalidaBodega('${o.firebaseId}')">🚀 Forzar Salida a Ruta</button></td>`;
+                tr.innerHTML = `
+                    <td><b>#${o.id}</b> - ${o.client}<br><small style="color:#0284c7;">📍 ${o.address}</small></td>
+                    <td>${o.description}</td>
+                    <td><span class="detail-tag">Prod: Q${(o.productPrice||0).toFixed(2)}</span><br><span class="detail-tag">Flete: Q${(o.shippingPrice||0).toFixed(2)}</span></td>
+                    <td><b>${o.driver}</b></td>
+                    <td><button class="btn btn-info" style="font-size:0.75rem;" onclick="forzarSalidaBodega('${o.firebaseId}')">🚀 Directo a Ruta</button></td>
+                `;
                 tbody.appendChild(tr);
             });
         }
 
         function forzarSalidaBodega(id) {
             db.ref(`orders/${id}`).update({ status: 'En Ruta: Entregando' });
-            alert("Orden sacada de bodega e ingresada a ruta de entrega.");
+            alert("Orden liberada de bodega e ingresada a ruta de entrega.");
         }
 
         function renderEntregandoGestor(filtered) {
@@ -821,12 +854,18 @@
             count.textContent = list.length;
             tbody.innerHTML = '';
             if (list.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#64748b; padding:1.5rem;">No hay entregas en ruta hacia el cliente.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#64748b; padding:1.5rem;">No hay entregas en ruta hacia el cliente.</td></tr>`;
                 return;
             }
             list.forEach(o => {
                 let tr = document.createElement('tr');
-                tr.innerHTML = `<td><b>#${o.id}</b><br>${o.client}</td><td><small>${o.address}</small></td><td>${o.driver}</td><td><span class="badge badge-entrega">En Ruta de Entrega</span></td>`;
+                tr.innerHTML = `
+                    <td><b>#${o.id}</b> - ${o.client}<br><small style="color:#0284c7;">📍 ${o.address}</small></td>
+                    <td><b>${o.restaurant}</b><br><small>${o.description}</small></td>
+                    <td><span class="detail-tag">Prod: Q${(o.productPrice||0).toFixed(2)}</span><br><span class="detail-tag">Flete: Q${(o.shippingPrice||0).toFixed(2)}</span></td>
+                    <td><b>${o.driver}</b></td>
+                    <td><span class="badge badge-entrega">En Ruta de Entrega</span></td>
+                `;
                 tbody.appendChild(tr);
             });
         }
@@ -847,7 +886,7 @@
                 let tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td><b>${m.codigo || 'MND'}</b><br>${m.clienteNombre}</td>
-                    <td><small><b>Ori:</b> ${m.origen}</small><br><small><b>Des:</b> ${m.destino}</small></td>
+                    <td><small><b>Ori:</b> ${m.origen}</small><br><small style="color:#0284c7;"><b>Des:</b> ${m.destino}</small></td>
                     <td>
                         <input type="number" id="mflete-${m.firebaseId}" value="${m.shippingPrice || 25}" class="driver-select-tbl">
                         <select id="mdriver-${m.firebaseId}" class="driver-select-tbl">
@@ -878,7 +917,12 @@
                 restaurant: "PAQUETERIA / MANDADO",
                 description: m.detalle,
                 notes: `Tel: ${m.clienteTelefono}`,
-                productPrice: 0, productCollect: 'no', shippingPrice: f, payer: 'cliente', driver: d, status: 'Aceptado'
+                productPrice: 0,
+                paymentMethod: 'Efectivo',
+                shippingPrice: f,
+                payer: 'cliente',
+                driver: d,
+                status: 'Aceptado'
             });
             db.ref(`paqueteria_mandados/${id}`).update({ estado: 'Asignado' });
             alert("Mandado despachado al sistema de órdenes.");
@@ -900,24 +944,52 @@
             tbody.innerHTML = '';
             filtered.slice().reverse().forEach(o => {
                 let badgeClass = o.status === 'Entregado' ? 'badge-entregado' : 'badge-aceptado';
+                let totalCobrado = ((o.paymentMethod === 'Efectivo' ? (o.productPrice||0) : 0) + (o.payer === 'cliente' ? (o.shippingPrice||0) : 0));
                 let tr = document.createElement('tr');
-                tr.innerHTML = `<td><b>#${o.id}</b></td><td>${o.client}</td><td>${o.driver || 'N/A'}</td><td>Q${(o.shippingPrice||0).toFixed(2)}</td><td><span class="badge ${badgeClass}">${o.status}</span></td>`;
+                tr.innerHTML = `
+                    <td><b>#${o.id}</b></td>
+                    <td>${o.client}<br><small style="color:#0284c7;">📍 ${o.address}</small></td>
+                    <td>${o.driver || 'N/A'}</td>
+                    <td>Q${totalCobrado.toFixed(2)} <small>(${o.paymentMethod||'Efectivo'})</small></td>
+                    <td><span class="badge ${badgeClass}">${o.status}</span></td>
+                `;
                 tbody.appendChild(tr);
             });
         }
 
+        /* DESCARGA DE HISTORIAL EXCEL CSV COMPLETO CON TODOS LOS DATOS DETALLADOS */
         function downloadDailyCSV() {
-            let csv = "data:text/csv;charset=utf-8,\uFEFFID,Cliente,Restaurante,Flete,Conductor,Estado\n";
-            orders.forEach(o => csv += `"#${o.id}","${o.client}","${o.restaurant}",${o.shippingPrice},"${o.driver}","${o.status}"\n`);
+            let listToExport = currentFilteredOrders.length > 0 ? currentFilteredOrders : orders;
+            
+            let csv = "data:text/csv;charset=utf-8,\uFEFF";
+            csv += "Fecha,ID_Orden,Cliente,Lugar_Destino,Restaurante,Detalle_Pedido,Subtotal_Producto,Metodo_Pago,Monto_Flete,Paga_Flete,Conductor,Estado\n";
+
+            listToExport.forEach(o => {
+                let fecha = o.date || getTodayString();
+                let id = o.id || 'N/A';
+                let cliente = (o.client || '').replace(/"/g, '""');
+                let destino = (o.address || '').replace(/"/g, '""');
+                let restaurante = (o.restaurant || '').replace(/"/g, '""');
+                let detalle = (o.description || '').replace(/"/g, '""');
+                let subtotal = (o.productPrice || 0).toFixed(2);
+                let metodo = o.paymentMethod || 'Efectivo';
+                let flete = (o.shippingPrice || 0).toFixed(2);
+                let pagaFlete = o.payer || 'cliente';
+                let conductor = (o.driver || 'N/A').replace(/"/g, '""');
+                let estado = o.status || 'N/A';
+
+                csv += `"${fecha}","=${id}","${cliente}","${destino}","${restaurante}","${detalle}",${subtotal},"${metodo}",${flete},"${pagaFlete}","${conductor}","${estado}"\n`;
+            });
+
             let link = document.createElement("a");
             link.setAttribute("href", encodeURI(csv));
-            link.setAttribute("download", "reporte_ordenes.csv");
+            link.setAttribute("download", `Reporte_DashDelivery502_${getTodayString()}.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
         }
 
-        // VISTA CONDUCTOR (CON PESTAÑA DEDICADA DE BODEGA)
+        // VISTA CONDUCTOR
         function renderConductorOrders() {
             let containerActivas = document.getElementById('conductorOrdersContainer');
             let containerBodega = document.getElementById('conductorBodegaContainer');
@@ -984,6 +1056,10 @@
                         `;
                     }
 
+                    let cobroProd = (o.paymentMethod === 'Efectivo') ? (o.productPrice || 0) : 0;
+                    let cobroFlete = (o.payer === 'cliente') ? (o.shippingPrice || 0) : 0;
+                    let totalACobrar = cobroProd + cobroFlete;
+
                     let card = document.createElement('div');
                     card.className = 'driver-card';
                     card.innerHTML = `
@@ -993,12 +1069,13 @@
                         </div>
                         <p><b>Comercio / Origen:</b> ${o.restaurant}</p>
                         <p><b>Cliente / Destino:</b> ${o.client}</p>
-                        <p><b>Dirección:</b> ${o.address}</p>
+                        <p style="color:#0284c7; font-weight:bold;"><b>Dirección:</b> ${o.address}</p>
                         <p><b>Llevar:</b> ${o.description}</p>
                         ${o.notes ? `<div class="note-box"><b>📌 Notas:</b> ${o.notes}</div>` : ''}
                         ${gpsButtons}
                         <div class="cobro-box">
-                            <p style="font-size:1rem; color:#059669; font-weight:bold;">TOTAL A COBRAR: Q${((o.productCollect === 'si' ? o.productPrice : 0) + (o.payer === 'cliente' ? o.shippingPrice : 0)).toFixed(2)}</p>
+                            <p style="font-size:0.8rem; color:#64748b;">Método de Pago: <b>${o.paymentMethod || 'Efectivo'}</b></p>
+                            <p style="font-size:1rem; color:#059669; font-weight:bold; margin-top:4px;">TOTAL A COBRAR: Q${totalACobrar.toFixed(2)}</p>
                         </div>
                         <div style="margin-top: 10px;">${actionBtn}</div>
                     `;
@@ -1020,7 +1097,7 @@
                             <span class="badge badge-bodega">📦 Almacenado en Bodega</span>
                         </div>
                         <p><b>Cliente:</b> ${o.client}</p>
-                        <p><b>Destino:</b> ${o.address}</p>
+                        <p style="color:#0284c7; font-weight:bold;"><b>Destino:</b> ${o.address}</p>
                         <p><b>Paquete:</b> ${o.description}</p>
                         ${o.notes ? `<div class="note-box"><b>📌 Notas:</b> ${o.notes}</div>` : ''}
                         <div style="margin-top: 12px;">
