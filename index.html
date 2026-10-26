@@ -160,6 +160,7 @@
         .btn-success { background-color: #0284c7; color: var(--white); }
         .btn-success:hover { background-color: #0369a1; }
         .btn-danger { background-color: var(--danger); color: var(--white); }
+        .btn-warning { background-color: var(--accent); color: var(--white); }
         .btn-info { background-color: var(--info); color: var(--white); }
         .btn-block { width: 100%; }
 
@@ -176,7 +177,7 @@
         /* KPIS GESTOR Y CONDUCTOR */
         .kpi-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 1rem;
             margin-bottom: 1.5rem;
         }
@@ -260,6 +261,7 @@
         .badge-aceptado { background: #fef3c7; color: #d97706; }
         .badge-en-ruta { background: #e0f2fe; color: #0284c7; }
         .badge-entregado { background: #d1fae5; color: #059669; }
+        .badge-rechazado { background: #fef2f2; color: #991b1b; }
 
         /* PESTAÑAS */
         .driver-tabs {
@@ -372,23 +374,34 @@
             padding: 4px; border-radius: 4px; border: 1px solid #cbd5e1; font-size: 0.8rem; width: 100%; margin-bottom: 4px; font-weight: 600;
         }
 
-        /* ETIQUETA EN EL MAPA */
-        .driver-map-badge {
-            background-color: #ffffff;
-            color: #0f172a;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-weight: 800;
-            font-size: 12px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.35);
-            white-space: nowrap;
-            display: flex;
-            align-items: center;
-            gap: 5px;
+        /* ÍCONOS VECTORES LIMPIOS PARA EL MAPA (TRIÁNGULOS DE NAVEGACIÓN) */
+        .driver-triangle-marker {
+            width: 0; 
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-bottom: 22px solid #f59e0b; /* Amarillo/Naranja en espera */
+            filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.4));
+            transition: transform 0.3s ease;
         }
+
+        .driver-triangle-marker.en-ruta { 
+            border-bottom-color: #059669; /* Verde en ruta */
+        }
+
         .custom-icon {
               background: transparent !important;
               border: none !important;
+        }
+
+        .search-box-orders {
+            width: 100%; 
+            padding: 8px 14px; 
+            border-radius: 8px; 
+            border: 1px solid #cbd5e1;
+            font-size: 0.85rem; 
+            margin-bottom: 12px; 
+            outline: none;
         }
     </style>
 </head>
@@ -495,12 +508,16 @@
                     <h3>En Ruta</h3>
                     <p id="kpiEnRuta">0</p>
                 </div>
+                <div class="kpi-card" style="border-left-color: var(--danger);">
+                    <h3>Rechazados</h3>
+                    <p id="kpiRechazados">0</p>
+                </div>
                 <div class="kpi-card" style="border-left-color: var(--primary);">
-                    <h3>Recaudado (Solo Fletes)</h3>
+                    <h3>Recaudado (Fletes)</h3>
                     <p id="kpiFletesRecaudados">Q0.00</p>
                 </div>
                 <div class="kpi-card" style="border-left-color: var(--accent);">
-                    <h3>Efectivo en Mano (Total)</h3>
+                    <h3>Efectivo en Mano</h3>
                     <p id="kpiEfectivoMano">Q0.00</p>
                 </div>
                 <div class="kpi-card" style="border-left-color: var(--info);">
@@ -510,7 +527,7 @@
             </div>
 
             <div class="dashboard-grid">
-                <!-- MAPA CON MODO TV EXCLUSIVO -->
+                <!-- MAPA CON MODO TV EXCLUSIVO Y PINES RECTIFICADOS -->
                 <div class="card" id="mapCardContainer">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <h2 style="margin: 0;">🗺️ Monitoreo Satelital de Flota en Tiempo Real</h2>
@@ -521,6 +538,9 @@
 
                 <!-- PANEL DE GESTIÓN DE ÓRDENES Y MANDADOS -->
                 <div class="card">
+                    <!-- BUSCADOR RÁPIDO DE ÓRDENES POR #ID -->
+                    <input type="text" id="orderSearchInput" class="search-box-orders" placeholder="🔍 Buscar por número de orden (#ID) o cliente..." oninput="filtrarOrdenesPorNum()">
+
                     <div class="driver-tabs" style="margin-bottom: 1rem;">
                         <button id="gestorTabNuevasBtn" class="driver-tab-btn active" onclick="switchGestorTab('nuevas')">
                             🔔 Nuevas Órdenes (<span id="countNuevasOrders">0</span>)
@@ -528,12 +548,15 @@
                         <button id="gestorTabMandadosBtn" class="driver-tab-btn" onclick="switchGestorTab('mandados')">
                             🛵 Mandados (<span id="countMandadosOrders">0</span>)
                         </button>
+                        <button id="gestorTabRechazadosBtn" class="driver-tab-btn" onclick="switchGestorTab('rechazados')">
+                            ❌ Rechazados (<span id="countRechazadosOrders">0</span>)
+                        </button>
                         <button id="gestorTabTodasBtn" class="driver-tab-btn" onclick="switchGestorTab('todas')">
                             📋 Historial / Envíos
                         </button>
                     </div>
 
-                    <!-- PESTAÑA 1: NUEVAS ÓRDENES (CON PRECIO EDITABLE Y ASIGNACIÓN DE CONDUCTOR) -->
+                    <!-- PESTAÑA 1: NUEVAS ÓRDENES -->
                     <div id="gestorTabNuevas">
                         <div class="table-responsive">
                             <table>
@@ -552,7 +575,7 @@
                         </div>
                     </div>
 
-                    <!-- PESTAÑA 2: MANDADOS Y PAQUETERIA (CON PRECIO EDITABLE Y ASIGNACIÓN) -->
+                    <!-- PESTAÑA 2: MANDADOS Y PAQUETERIA -->
                     <div id="gestorTabMandados" style="display: none;">
                         <div class="table-responsive">
                             <table>
@@ -571,7 +594,26 @@
                         </div>
                     </div>
 
-                    <!-- PESTAÑA 3: CONTROL GENERAL / HISTORIAL -->
+                    <!-- PESTAÑA 3: ÓRDENES RECHAZADAS (NUEVA) -->
+                    <div id="gestorTabRechazados" style="display: none;">
+                        <div class="table-responsive">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>ID / Fecha</th>
+                                        <th>Cliente / Detalle</th>
+                                        <th>Conductor</th>
+                                        <th>Motivo de Rechazo</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rechazadosTableBody">
+                                    <!-- Dinámico -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- PESTAÑA 4: CONTROL GENERAL / HISTORIAL -->
                     <div id="gestorTabTodas" style="display: none;">
                         <div class="table-responsive">
                             <table>
@@ -596,9 +638,12 @@
 
         <!-- VISTA CONDUCTOR -->
         <div id="conductorSection" class="view-section">
-            <div class="card" style="margin-bottom: 1rem;">
-                <h2 style="margin: 0;" id="conductorWelcomeTitle">Rutas de Conductor</h2>
-                <p style="font-size: 0.85rem; color: #64748b; margin-top: 4px;">Monitoreo de entregas y métricas del repartidor:</p>
+            <div class="card" style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                <div>
+                    <h2 style="margin: 0;" id="conductorWelcomeTitle">Rutas de Conductor</h2>
+                    <p style="font-size: 0.85rem; color: #64748b; margin-top: 4px;">Monitoreo de entregas y métricas del repartidor:</p>
+                </div>
+                <button class="btn btn-warning" onclick="abrirModalReporteIncidencia()">⚠️ Reportar Problema en Ruta</button>
             </div>
 
             <!-- RESUMEN / KPIS DEL CONDUCTOR -->
@@ -648,6 +693,33 @@
             </div>
         </div>
     </main>
+
+    <!-- MODAL REPORTAR INCIDENCIA / CHAT DE EMERGENCIA -->
+    <div id="modalIncidencia" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="cerrarModalReporteIncidencia()">&times;</span>
+            <h2 style="margin-bottom: 0.5rem; font-size: 1.2rem; color: #dc2626;">⚠️ Reportar Problema en Ruta</h2>
+            <p style="font-size: 0.85rem; color: #64748b; margin-bottom: 1rem;">Notifica al gestor de inmediato cualquier inconveniente con tu vehículo o entrega.</p>
+            
+            <form onsubmit="enviarReporteIncidencia(event)">
+                <div class="form-group">
+                    <label>Tipo de Inconveniente *</label>
+                    <select id="incidenciaTipo" required>
+                        <option value="Pinchadura de Llanta">🛠️ Pinchadura de Llanta</option>
+                        <option value="Accidente o Caída">🚑 Accidente / Caída</option>
+                        <option value="Falla Mecánica de Moto">⚙️ Falla Mecánica</option>
+                        <option value="Cliente no responde / Dirección Incorrecta">🏠 Cliente no responde</option>
+                        <option value="Otro Problema">❓ Otro Inconveniente</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Mensaje / Detalle de la Emergencia *</label>
+                    <textarea id="incidenciaDetalle" rows="3" placeholder="Ej. Me ponché en la salida a El Chupadero, voy a tardar 15 min..." required></textarea>
+                </div>
+                <button type="submit" class="btn btn-danger btn-block" style="margin-top: 10px;">Enviar Alerta al Gestor</button>
+            </form>
+        </div>
+    </div>
 
     <!-- MODAL CREAR ORDEN (GESTOR) -->
     <div id="orderModal" class="modal">
@@ -911,17 +983,22 @@
         function switchGestorTab(tabName) {
             const btnNuevas = document.getElementById('gestorTabNuevasBtn');
             const btnMandados = document.getElementById('gestorTabMandadosBtn');
+            const btnRechazados = document.getElementById('gestorTabRechazadosBtn');
             const btnTodas = document.getElementById('gestorTabTodasBtn');
             
             const secNuevas = document.getElementById('gestorTabNuevas');
             const secMandados = document.getElementById('gestorTabMandados');
+            const secRechazados = document.getElementById('gestorTabRechazados');
             const secTodas = document.getElementById('gestorTabTodas');
 
             btnNuevas.classList.remove('active');
             btnMandados.classList.remove('active');
+            btnRechazados.classList.remove('active');
             btnTodas.classList.remove('active');
+
             secNuevas.style.display = 'none';
             secMandados.style.display = 'none';
+            secRechazados.style.display = 'none';
             secTodas.style.display = 'none';
 
             if (tabName === 'nuevas') {
@@ -930,6 +1007,9 @@
             } else if (tabName === 'mandados') {
                 btnMandados.classList.add('active');
                 secMandados.style.display = 'block';
+            } else if (tabName === 'rechazados') {
+                btnRechazados.classList.add('active');
+                secRechazados.style.display = 'block';
             } else {
                 btnTodas.classList.add('active');
                 secTodas.style.display = 'block';
@@ -1008,17 +1088,11 @@
             if (!map) {
                 map = L.map('map').setView(NUEVA_SANTA_ROSA_COORDS, 15);
                 
-                let satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                // Usamos la capa limpia de OpenStreetMap Carto para ubicación precisa de aldeas
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 19,
-                    attribution: 'Tiles &copy; Esri'
-                });
-
-                let labelsLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
-                    maxZoom: 19
-                });
-
-                satelliteLayer.addTo(map);
-                labelsLayer.addTo(map);
+                    attribution: '© OpenStreetMap'
+                }).addTo(map);
 
                 L.marker(NUEVA_SANTA_ROSA_COORDS).addTo(map).bindPopup("<b>Base Dash Delivery (Nueva Santa Rosa)</b>");
             }
@@ -1035,22 +1109,12 @@
                 let info = driversLocation[driverName];
                 if (!info.lat || !info.lng) continue;
 
-                let isRuta = info.status === 'En ruta';
-                let borderColor = isRuta ? '#059669' : '#f59e0b';
-                let statusBadgeColor = isRuta ? '#d1fae5' : '#fef3c7';
-                let statusTextColor = isRuta ? '#047857' : '#d97706';
-                let shortName = driverName.split(' ')[0];
+                let isRuta = info.status === 'En ruta' || info.status === 'En Ruta';
+                let triangleClass = isRuta ? 'driver-triangle-marker en-ruta' : 'driver-triangle-marker';
 
                 let icon = L.divIcon({
                     className: 'custom-icon',
-                    html: `
-                        <div class="driver-map-badge" style="border: 3px solid ${borderColor};">
-                            <span>🛵 <b>${shortName}</b></span>
-                            <span style="background:${statusBadgeColor}; color:${statusTextColor}; padding:2px 6px; border-radius:10px; font-size:10px;">
-                                ${info.status || 'En espera'}
-                            </span>
-                        </div>
-                    `
+                    html: `<div class="${triangleClass}" title="${driverName} (${info.status || 'En espera'})"></div>`
                 });
 
                 markers[driverName] = L.marker([info.lat, info.lng], { icon: icon }).addTo(map)
@@ -1079,13 +1143,22 @@
                 shippingPrice: parseFloat(document.getElementById('shippingPrice').value) || 0,
                 payer: document.getElementById('shippingPayer').value,
                 driver: document.getElementById('assignedDriver').value,
-                status: 'Pendiente'
+                status: 'Aceptado' // Las órdenes manuales del gestor entran confirmadas
             };
 
             db.ref('orders').push(newOrder);
             closeOrderModal();
             document.getElementById('orderForm').reset();
             alert(`✅ Orden #${newOrder.id} creada correctamente`);
+        }
+
+        function filtrarOrdenesPorNum() {
+            let term = document.getElementById('orderSearchInput').value.toLowerCase().trim();
+            let rows = document.querySelectorAll('tbody tr');
+            rows.forEach(r => {
+                let text = r.textContent.toLowerCase();
+                r.style.display = text.includes(term) ? '' : 'none';
+            });
         }
 
         // RENDERIZAR NUEVAS ÓRDENES (FLETE EDITABLE + SELECCIÓN DE CONDUCTOR)
@@ -1147,13 +1220,11 @@
             alert(`¡Pedido confirmado, flete de Q${nuevoFlete.toFixed(2)} asignado a: ${conductorElegido}!`);
         }
 
-        // RENDERIZAR MANDADOS (FILTRADO SOLO PENDIENTES - EVITA DUPLICADOS)
         function renderMandadosGestor() {
             const tbodyMandados = document.getElementById('mandadosTableBody');
             const countSpan = document.getElementById('countMandadosOrders');
             if (!tbodyMandados) return;
 
-            // Filtramos únicamente los mandados que NO han sido asignados aún
             const mandadosPendientes = mandados.filter(m => m.estado === 'Pendiente de Cotización' || !m.estado);
 
             countSpan.textContent = mandadosPendientes.length;
@@ -1197,7 +1268,6 @@
             let mandadoObj = mandados.find(m => m.firebaseId === firebaseId);
             if (!mandadoObj) return;
 
-            // Evitamos que se procese si ya fue asignado previamente
             if (mandadoObj.estado === 'Asignado') {
                 alert("Este mandado ya fue despachado previamente.");
                 return;
@@ -1226,13 +1296,36 @@
                 status: 'Aceptado'
             };
 
-            // 1. Convertimos el mandado en orden oficial de reparto
             db.ref('orders').push(ordenConvertida);
-            
-            // 2. Marcamos el mandado como Asignado para removerlo de la lista de pendientes
             db.ref(`paqueteria_mandados/${firebaseId}`).update({ estado: 'Asignado' });
 
             alert(`¡Mandado despachado con flete de Q${nuevoFlete.toFixed(2)} asignado a: ${conductorElegido}!`);
+        }
+
+        function renderRechazadosGestor(filteredOrders) {
+            const tbodyRechazados = document.getElementById('rechazadosTableBody');
+            const countSpan = document.getElementById('countRechazadosOrders');
+            if (!tbodyRechazados) return;
+
+            const rechazados = filteredOrders.filter(o => o.status === 'Rechazado');
+            countSpan.textContent = rechazados.length;
+            tbodyRechazados.innerHTML = '';
+
+            if (rechazados.length === 0) {
+                tbodyRechazados.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#64748b; padding:1.5rem;">No hay órdenes rechazadas. 👍</td></tr>`;
+                return;
+            }
+
+            rechazados.slice().reverse().forEach(o => {
+                let tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><b>#${o.id}</b><br><small style="color:#64748b;">${o.date || ''}</small></td>
+                    <td><b>${o.client}</b><br><small>${o.restaurant} - ${o.description}</small></td>
+                    <td><b>${o.driver || 'N/A'}</b></td>
+                    <td><span class="badge badge-rechazado">❌ ${o.motivoRechazo || 'Rechazado por Conductor'}</span></td>
+                `;
+                tbodyRechazados.appendChild(tr);
+            });
         }
 
         function updateGestorView() {
@@ -1254,6 +1347,7 @@
             document.getElementById('kpiTotal').textContent = filteredOrders.length;
             document.getElementById('kpiPendientes').textContent = filteredOrders.filter(o => o.status === 'Pendiente').length;
             document.getElementById('kpiEnRuta').textContent = filteredOrders.filter(o => o.status === 'En Ruta').length;
+            document.getElementById('kpiRechazados').textContent = filteredOrders.filter(o => o.status === 'Rechazado').length;
 
             let fletesRecaudados = 0; 
             let efectivoTotalMano = 0; 
@@ -1277,6 +1371,7 @@
             document.getElementById('kpiKmTotal').textContent = `${totalKmFlota.toFixed(1)} km`;
 
             renderNuevasOrdenes(filteredOrders);
+            renderRechazadosGestor(filteredOrders);
 
             let tbody = document.getElementById('ordersTableBody');
             tbody.innerHTML = '';
@@ -1289,6 +1384,7 @@
                     if (o.status === 'Aceptado') badgeClass = 'badge-aceptado';
                     if (o.status === 'En Ruta') badgeClass = 'badge-en-ruta';
                     if (o.status === 'Entregado') badgeClass = 'badge-entregado';
+                    if (o.status === 'Rechazado') badgeClass = 'badge-rechazado';
 
                     let prodACobrar = o.productCollect === 'si' ? o.productPrice : 0;
                     let fleteACobrar = o.payer === 'cliente' ? o.shippingPrice : 0;
@@ -1300,7 +1396,7 @@
                     tr.innerHTML = `
                         <td><b>#${o.id}</b><br><small>${o.client}</small> <br><small style="color:#94a3b8;">${o.date || ''}</small></td>
                         <td><b>${o.restaurant}</b><br><small>${o.description}</small>${notesHtml}</td>
-                        <td>${o.driver}</td>
+                        <td>${o.driver || 'N/A'}</td>
                         <td><b>Q${totalCliente.toFixed(2)}</b><br><small>Flete: Q${(o.shippingPrice || 0).toFixed(2)}</small></td>
                         <td><span class="badge ${badgeClass}">${o.status}</span></td>
                     `;
@@ -1378,6 +1474,7 @@
 
             let driverAllOrders = orders.filter(o => o.driver === loggedDriverName || o.driver === 'TODOS');
 
+            // Solo órdenes Aceptadas o En Ruta (Pendientes no aparecen)
             let driverActiveOrders = driverAllOrders.filter(o => o.status === 'Aceptado' || o.status === 'En Ruta');
 
             let driverCompletedOrders = driverAllOrders.filter(o => {
@@ -1413,13 +1510,28 @@
                         ? `Q${o.productPrice.toFixed(2)}`
                         : `Q0.00 (Ya Pagado Previamente)`;
 
+                    let gpsLink = o.address.includes('http') ? o.address.split('| Ubicación: ')[1] : '';
+                    let navButton = gpsLink ? `
+                        <a href="${gpsLink}" target="_blank" class="btn btn-info btn-block" style="margin-bottom: 8px; font-size:0.85rem; text-decoration:none;">
+                            🗺️ Abrir Navegación GPS (Waze / Google Maps)
+                        </a>
+                    ` : '';
+
                     let actionBtn = '';
-                    if (o.status === 'Pendiente') {
-                        actionBtn = `<button class="btn btn-primary btn-block" onclick="updateOrderStatus('${o.firebaseId}', 'Aceptado')">✋ Aceptar Orden</button>`;
-                    } else if (o.status === 'Aceptado') {
-                        actionBtn = `<button class="btn btn-info btn-block" onclick="updateOrderStatus('${o.firebaseId}', 'En Ruta')">▶️ Comenzar Reparto</button>`;
+                    if (o.status === 'Aceptado') {
+                        actionBtn = `
+                            <div style="display:flex; gap:8px;">
+                                <button class="btn btn-info btn-block" onclick="updateOrderStatus('${o.firebaseId}', 'En Ruta')">▶️ Comenzar Reparto</button>
+                                <button class="btn btn-danger" style="padding: 0.6rem 1rem;" onclick="rechazarOrdenConductor('${o.firebaseId}')">❌ Rechazar</button>
+                            </div>
+                        `;
                     } else if (o.status === 'En Ruta') {
-                        actionBtn = `<button class="btn btn-danger btn-block" onclick="updateOrderStatus('${o.firebaseId}', 'Entregado')">🏁 Ruta Terminada / Entregado</button>`;
+                        actionBtn = `
+                            <div style="display:flex; gap:8px;">
+                                <button class="btn btn-danger btn-block" onclick="updateOrderStatus('${o.firebaseId}', 'Entregado')">🏁 Ruta Terminada / Entregado</button>
+                                <button class="btn btn-warning" style="padding: 0.6rem 1rem;" onclick="rechazarOrdenConductor('${o.firebaseId}')">❌ Cancelar/Rechazar</button>
+                            </div>
+                        `;
                     }
 
                     let notesSection = o.notes ? `
@@ -1437,6 +1549,7 @@
                         <p><b>Llevar:</b> ${o.description}</p>
                         
                         ${notesSection}
+                        ${navButton}
 
                         <div class="cobro-box">
                             <p style="font-size:0.8rem; color:#64748b; margin-bottom:2px;">💵 <b>DETALLE DE COBRO AL CLIENTE:</b></p>
@@ -1487,6 +1600,45 @@
                 let statusText = newStatus === 'En Ruta' ? 'En ruta' : 'En espera';
                 db.ref(`driversLocation/${loggedDriverName}`).update({ status: statusText });
             }
+        }
+
+        function rechazarOrdenConductor(firebaseId) {
+            let motivo = prompt("Por favor ingresa la razón por la que rechazas o cancelas la orden:");
+            if (motivo && motivo.trim() !== "") {
+                db.ref(`orders/${firebaseId}`).update({
+                    status: 'Rechazado',
+                    motivoRechazo: motivo.trim(),
+                    driver: loggedDriverName
+                });
+                alert("❌ Orden registrada como rechazada.");
+            }
+        }
+
+        function abrirModalReporteIncidencia() {
+            document.getElementById('modalIncidencia').style.display = 'flex';
+        }
+
+        function cerrarModalReporteIncidencia() {
+            document.getElementById('modalIncidencia').style.display = 'none';
+        }
+
+        function enviarReporteIncidencia(e) {
+            e.preventDefault();
+            let tipo = document.getElementById('incidenciaTipo').value;
+            let detalle = document.getElementById('incidenciaDetalle').value.trim();
+
+            let reporte = {
+                conductor: loggedDriverName,
+                tipo: tipo,
+                detalle: detalle,
+                timestamp: Date.now(),
+                fecha: getTodayString()
+            };
+
+            db.ref('incidencias').push(reporte);
+            cerrarModalReporteIncidencia();
+            document.getElementById('incidenciaDetalle').value = '';
+            alert("⚠️ Alerta de problema enviada correctamente al gestor.");
         }
     </script>
 </body>
