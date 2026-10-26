@@ -13,7 +13,6 @@
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     
     <style>
@@ -32,7 +31,6 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
         body { background-color: var(--bg-light); color: var(--text-main); min-height: 100vh; }
 
-        /* PORTAL Y ACCESO */
         .portal-container {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             min-height: 100vh; padding: 20px; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
@@ -47,14 +45,12 @@
         }
         .role-card:hover { transform: translateY(-5px); background: rgba(255, 255, 255, 0.1); border-color: var(--primary); }
 
-        /* HEADER */
         .app-header {
             background-color: var(--secondary); color: var(--white); padding: 1rem 2rem;
             display: flex; justify-content: space-between; align-items: center;
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
 
-        /* BOTONES */
         .btn { padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: background 0.2s; }
         .btn-primary { background-color: var(--primary); color: var(--white); }
         .btn-primary:hover { background-color: var(--primary-dark); }
@@ -65,16 +61,14 @@
         .btn-info { background-color: var(--info); color: var(--white); text-decoration: none; }
         .btn-block { width: 100%; }
 
-        /* CONTENEDOR PRINCIPAL */
         .main-container { padding: 1.5rem 2rem; max-width: 1400px; margin: 0 auto; }
         .view-section { display: none; }
         .view-section.active { display: block; }
 
-        /* KPIS */
-        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
         .kpi-card { background: var(--white); padding: 1rem; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border-left: 4px solid var(--secondary); }
-        .kpi-card h3 { font-size: 0.75rem; color: #64748b; margin-bottom: 0.3rem; text-transform: uppercase; }
-        .kpi-card p { font-size: 1.25rem; font-weight: 700; color: var(--secondary); }
+        .kpi-card h3 { font-size: 0.7rem; color: #64748b; margin-bottom: 0.3rem; text-transform: uppercase; }
+        .kpi-card p { font-size: 1.2rem; font-weight: 700; color: var(--secondary); }
 
         .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
         @media (max-width: 900px) { .dashboard-grid { grid-template-columns: 1fr; } }
@@ -83,11 +77,9 @@
         .card h2 { font-size: 1.1rem; margin-bottom: 1rem; color: var(--secondary); }
         #map { width: 100%; height: 380px; border-radius: 8px; }
 
-        /* MODO TV MAPA */
         #mapCardContainer:fullscreen { width: 100vw !important; height: 100vh !important; background: #0f172a; padding: 20px; display: flex; flex-direction: column; justify-content: center; }
         #mapCardContainer:fullscreen #map { height: 85vh !important; width: 100% !important; }
 
-        /* TABLAS Y BADGES */
         .table-responsive { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
         th, td { padding: 10px; border-bottom: 1px solid #f1f5f9; }
@@ -96,34 +88,24 @@
         .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; }
         .badge-pendiente { background: #fee2e2; color: #dc2626; }
         .badge-aceptado { background: #fef3c7; color: #d97706; }
-        .badge-en-ruta { background: #e0f2fe; color: #0284c7; }
+        .badge-recoleccion { background: #ffedd5; color: #c2410c; }
+        .badge-bodega { background: #f3e8ff; color: #7e22ce; }
+        .badge-entrega { background: #e0f2fe; color: #0284c7; }
         .badge-entregado { background: #d1fae5; color: #059669; }
         .badge-rechazado { background: #fef2f2; color: #991b1b; }
 
-        /* CAJA DE ALERTAS DE INCIDENCIA EN EL GESTOR */
-        .incidencias-alert-box {
-            background: #fef2f2;
-            border: 2px solid #ef4444;
-            border-radius: 12px;
-            padding: 1rem;
-            margin-bottom: 1.5rem;
-            display: none;
-        }
-        .incidencias-alert-box.active { display: block; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); } 70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+        .incidencias-alert-box { background: #fef2f2; border: 2px solid #ef4444; border-radius: 12px; padding: 1rem; margin-bottom: 1.5rem; display: none; }
+        .incidencias-alert-box.active { display: block; }
 
-        /* PESTAÑAS */
         .driver-tabs { display: flex; gap: 10px; margin-bottom: 1rem; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; flex-wrap: wrap; }
         .driver-tab-btn { padding: 8px 16px; border: none; background: transparent; font-weight: 600; font-size: 0.9rem; color: #64748b; cursor: pointer; border-radius: 8px; transition: background 0.2s; }
         .driver-tab-btn.active { background-color: var(--primary); color: var(--white); }
 
-        /* TARJETAS CONDUCTOR */
         .driver-orders-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.2rem; }
         .driver-card { background: var(--white); border-radius: 12px; padding: 1.2rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); border-top: 5px solid var(--primary); }
         .cobro-box { background: #f8fafc; border: 1px dashed #cbd5e1; padding: 10px; border-radius: 8px; margin: 10px 0; }
         .note-box { background: #fffbeb; border-left: 4px solid var(--accent); padding: 8px 12px; border-radius: 6px; margin: 8px 0; font-size: 0.85rem; color: #92400e; }
 
-        /* MODALES */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; }
         .modal-content { background: var(--white); padding: 1.8rem; border-radius: 12px; width: 90%; max-width: 520px; position: relative; max-height: 90vh; overflow-y: auto; }
         .close { position: absolute; right: 1rem; top: 0.8rem; font-size: 1.5rem; cursor: pointer; color: #94a3b8; }
@@ -132,7 +114,6 @@
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
-        /* MARCADOR TRIÁNGULO MAPA */
         .driver-triangle-marker {
             width: 0; height: 0;
             border-left: 10px solid transparent; border-right: 10px solid transparent;
@@ -159,12 +140,10 @@
             <div class="role-card" onclick="openLoginModal('gestor')">
                 <div style="font-size: 3rem; margin-bottom: 1rem;">🖥️</div>
                 <h2>Modo Gestor de Rutas</h2>
-                <p style="font-size: 0.85rem; color: #cbd5e1; margin-top: 5px;">Asignaciones, mapa en tiempo real y cuentas de cobro.</p>
             </div>
             <div class="role-card" onclick="openLoginModal('conductor')">
                 <div style="font-size: 3rem; margin-bottom: 1rem;">📱</div>
                 <h2>Modo Conductor</h2>
-                <p style="font-size: 0.85rem; color: #cbd5e1; margin-top: 5px;">Acceso de repartidores para consultar y realizar entregas.</p>
             </div>
         </div>
     </div>
@@ -226,7 +205,7 @@
                 </div>
             </div>
 
-            <!-- CONTENEDOR DE ALERTAS / INCIDENCIAS DE CONDUCTORES EN EL GESTOR -->
+            <!-- CONTENEDOR DE ALERTAS / INCIDENCIAS -->
             <div id="gestorIncidenciasContainer" class="incidencias-alert-box">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <h3 style="color: #dc2626; font-size: 1rem;">⚠️ ALERTAS Y URGENCIAS EN RUTA</h3>
@@ -235,20 +214,20 @@
                 <div id="gestorIncidenciasList"></div>
             </div>
 
-            <!-- KPIS GESTOR -->
+            <!-- KPIS GESTOR (SEPARANDO RECOLECCIÓN Y ENTREGA) -->
             <div class="kpi-grid">
                 <div class="kpi-card"><h3>Envíos</h3><p id="kpiTotal">0</p></div>
                 <div class="kpi-card"><h3>Pendientes</h3><p id="kpiPendientes">0</p></div>
-                <div class="kpi-card"><h3>En Ruta</h3><p id="kpiEnRuta">0</p></div>
+                <div class="kpi-card" style="border-left-color: #c2410c;"><h3>Recogiendo</h3><p id="kpiRecogiendo">0</p></div>
+                <div class="kpi-card" style="border-left-color: #7e22ce;"><h3>En Bodega</h3><p id="kpiBodega">0</p></div>
+                <div class="kpi-card" style="border-left-color: var(--info);"><h3>Entregando</h3><p id="kpiEntregando">0</p></div>
                 <div class="kpi-card" style="border-left-color: var(--danger);"><h3>Rechazados</h3><p id="kpiRechazados">0</p></div>
-                <div class="kpi-card" style="border-left-color: var(--danger);"><h3>Urgencias</h3><p id="kpiUrgencias">0</p></div>
                 <div class="kpi-card" style="border-left-color: var(--primary);"><h3>Fletes</h3><p id="kpiFletesRecaudados">Q0.00</p></div>
                 <div class="kpi-card" style="border-left-color: var(--accent);"><h3>Efectivo</h3><p id="kpiEfectivoMano">Q0.00</p></div>
-                <div class="kpi-card" style="border-left-color: var(--info);"><h3>Km</h3><p id="kpiKmTotal">0.0 km</p></div>
             </div>
 
             <div class="dashboard-grid">
-                <!-- MAPA DEL GESTOR -->
+                <!-- MAPA DEL GESTOR (CON CAPA SATELITAL ESRI ORIGINAL) -->
                 <div class="card" id="mapCardContainer">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                         <h2 style="margin: 0;">🗺️ Monitoreo Satelital de Flota</h2>
@@ -449,7 +428,6 @@
             return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)));
         }
 
-        /* ESCUCHADOR DE ÓRDENES */
         db.ref('orders').on('value', snap => {
             orders = [];
             let val = snap.val();
@@ -458,7 +436,6 @@
             if (activeRole === 'conductor') renderConductorOrders();
         });
 
-        /* ESCUCHADOR DE MANDADOS */
         db.ref('paqueteria_mandados').on('value', snap => {
             mandados = [];
             let val = snap.val();
@@ -466,7 +443,6 @@
             if (activeRole === 'gestor') renderMandadosGestor();
         });
 
-        /* ESCUCHADOR DE GEOLOCALIZACIÓN CONDUCTORES */
         db.ref('driversLocation').on('value', snap => {
             driversLocation = snap.val() || {};
             if (activeRole === 'gestor') {
@@ -476,7 +452,6 @@
             if (activeRole === 'conductor') renderConductorOrders();
         });
 
-        /* ESCUCHADOR DE INCIDENCIAS / EMERGENCIAS (SISTEMA EN TIEMPO REAL) */
         db.ref('incidencias').on('value', snap => {
             incidenciasList = [];
             let val = snap.val();
@@ -487,10 +462,6 @@
         function renderGestorIncidencias() {
             let container = document.getElementById('gestorIncidenciasContainer');
             let list = document.getElementById('gestorIncidenciasList');
-            let kpi = document.getElementById('kpiUrgencias');
-
-            kpi.textContent = incidenciasList.length;
-
             if (incidenciasList.length === 0) {
                 container.classList.remove('active');
                 list.innerHTML = '';
@@ -501,19 +472,14 @@
                     let hora = new Date(inc.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                     let div = document.createElement('div');
                     div.style.cssText = "background:#ffffff; border-left:4px solid #ef4444; padding:8px 12px; margin-top:6px; border-radius:6px; font-size:0.85rem;";
-                    div.innerHTML = `
-                        <b>🚨 Conductor: ${inc.conductor}</b> (${hora})<br>
-                        <span style="color:#dc2626; font-weight:bold;">${inc.tipo}:</span> ${inc.detalle}
-                    `;
+                    div.innerHTML = `<b>🚨 Conductor: ${inc.conductor}</b> (${hora})<br><span style="color:#dc2626; font-weight:bold;">${inc.tipo}:</span> ${inc.detalle}`;
                     list.appendChild(div);
                 });
             }
         }
 
         function limpiarIncidencias() {
-            if (confirm("¿Deseas marcar como resueltas todas las alertas?")) {
-                db.ref('incidencias').remove();
-            }
+            if (confirm("¿Marcar como resueltas todas las alertas?")) db.ref('incidencias').remove();
         }
 
         function openLoginModal(role) {
@@ -611,8 +577,10 @@
         function initMap() {
             if (!map) {
                 map = L.map('map').setView(NUEVA_SANTA_ROSA_COORDS, 14);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    maxZoom: 19, attribution: '© OpenStreetMap'
+                // Restauramos la capa Satelital ESRI que tenías al principio
+                L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                    maxZoom: 19,
+                    attribution: 'Tiles &copy; Esri'
                 }).addTo(map);
                 L.marker(NUEVA_SANTA_ROSA_COORDS).addTo(map).bindPopup("<b>Base Dash Delivery 502</b>");
             }
@@ -627,7 +595,7 @@
             for (let name in driversLocation) {
                 let info = driversLocation[name];
                 if (!info.lat || !info.lng) continue;
-                let isRuta = info.status === 'En ruta' || info.status === 'En Ruta';
+                let isRuta = info.status && info.status.includes('En Ruta');
                 let icon = L.divIcon({ className: 'custom-icon', html: `<div class="driver-triangle-marker ${isRuta ? 'en-ruta' : ''}"></div>` });
                 markers[name] = L.marker([info.lat, info.lng], { icon }).addTo(map).bindPopup(`<b>${name}</b><br>Estado: ${info.status}`);
             }
@@ -681,7 +649,9 @@
 
             document.getElementById('kpiTotal').textContent = filtered.length;
             document.getElementById('kpiPendientes').textContent = filtered.filter(o => o.status === 'Pendiente').length;
-            document.getElementById('kpiEnRuta').textContent = filtered.filter(o => o.status === 'En Ruta').length;
+            document.getElementById('kpiRecogiendo').textContent = filtered.filter(o => o.status === 'En Ruta: Recogiendo').length;
+            document.getElementById('kpiBodega').textContent = filtered.filter(o => o.status === 'En Bodega').length;
+            document.getElementById('kpiEntregando').textContent = filtered.filter(o => o.status === 'En Ruta: Entregando').length;
             document.getElementById('kpiRechazados').textContent = filtered.filter(o => o.status === 'Rechazado').length;
 
             let fletes = 0, efectivo = 0;
@@ -832,6 +802,7 @@
             document.body.removeChild(link);
         }
 
+        // CONDUCTOR CON LOS NUEVOS ESTADOS DE RECOLECCIÓN, BODEGA Y ENTREGA
         function renderConductorOrders() {
             let containerActivas = document.getElementById('conductorOrdersContainer');
             let containerCompleted = document.getElementById('conductorCompletedContainer');
@@ -841,7 +812,7 @@
             let todayStr = getTodayString(), now = Date.now(), ms = 86400000;
 
             let driverAll = orders.filter(o => o.driver === loggedDriverName || o.driver === 'TODOS');
-            let activas = driverAll.filter(o => o.status === 'Aceptado' || o.status === 'En Ruta');
+            let activas = driverAll.filter(o => o.status !== 'Entregado' && o.status !== 'Rechazado');
             let completadas = driverAll.filter(o => {
                 if (o.status !== 'Entregado') return false;
                 let t = o.timestamp || new Date(o.date).getTime() || 0;
@@ -868,23 +839,45 @@
                         });
                     }
 
-                    let actionBtn = o.status === 'Aceptado' ? `
-                        <div style="display:flex; gap:8px;">
-                            <button class="btn btn-info btn-block" onclick="updateOrderStatus('${o.firebaseId}', 'En Ruta')">▶️ Comenzar Reparto</button>
-                            <button class="btn btn-danger" onclick="rechazarOrdenConductor('${o.firebaseId}')">❌ Rechazar</button>
-                        </div>
-                    ` : `
-                        <div style="display:flex; gap:8px;">
-                            <button class="btn btn-danger btn-block" onclick="updateOrderStatus('${o.firebaseId}', 'Entregado')">🏁 Entregado</button>
-                            <button class="btn btn-warning" onclick="rechazarOrdenConductor('${o.firebaseId}')">❌ Rechazar</button>
-                        </div>
-                    `;
+                    let statusBadge = `<span class="badge badge-aceptado">${o.status || 'Aceptado'}</span>`;
+                    if (o.status === 'En Ruta: Recogiendo') statusBadge = `<span class="badge badge-recoleccion">🟡 En Ruta (Recogiendo)</span>`;
+                    if (o.status === 'En Bodega') statusBadge = `<span class="badge badge-bodega">📦 Almacenado en Bodega</span>`;
+                    if (o.status === 'En Ruta: Entregando') statusBadge = `<span class="badge badge-entrega">🔵 En Ruta (Entregando)</span>`;
+
+                    let actionBtn = '';
+                    if (o.status === 'Aceptado' || !o.status) {
+                        actionBtn = `
+                            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                                <button class="btn btn-info" style="flex:1; font-size:0.8rem;" onclick="updateOrderStatus('${o.firebaseId}', 'En Ruta: Recogiendo')">🛵 1. Ir a Recoger</button>
+                                <button class="btn btn-danger" style="font-size:0.8rem;" onclick="rechazarOrdenConductor('${o.firebaseId}')">❌ Rechazar</button>
+                            </div>
+                        `;
+                    } else if (o.status === 'En Ruta: Recogiendo') {
+                        actionBtn = `
+                            <div style="display:flex; gap:6px; flex-wrap:wrap;">
+                                <button class="btn btn-warning" style="flex:1; font-size:0.8rem; color:#fff;" onclick="updateOrderStatus('${o.firebaseId}', 'En Bodega')">📦 2. Dejar en Bodega</button>
+                                <button class="btn btn-info" style="flex:1; font-size:0.8rem;" onclick="updateOrderStatus('${o.firebaseId}', 'En Ruta: Entregando')">🚀 Directo a Entregar</button>
+                            </div>
+                        `;
+                    } else if (o.status === 'En Bodega') {
+                        actionBtn = `
+                            <button class="btn btn-primary btn-block" style="font-size:0.85rem;" onclick="updateOrderStatus('${o.firebaseId}', 'En Ruta: Entregando')">🚀 Sacar de Bodega / Iniciar Ruta de Entrega</button>
+                        `;
+                    } else if (o.status === 'En Ruta: Entregando') {
+                        actionBtn = `
+                            <button class="btn btn-success btn-block" style="font-size:0.85rem;" onclick="updateOrderStatus('${o.firebaseId}', 'Entregado')">🏁 3. Ruta Terminada / Entregado</button>
+                        `;
+                    }
 
                     let card = document.createElement('div');
                     card.className = 'driver-card';
                     card.innerHTML = `
-                        <h3>Orden #${o.id} - ${o.restaurant}</h3>
-                        <p><b>Cliente:</b> ${o.client}</p>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <h3 style="margin:0;">Orden #${o.id}</h3>
+                            ${statusBadge}
+                        </div>
+                        <p><b>Comercio / Origen:</b> ${o.restaurant}</p>
+                        <p><b>Cliente / Destino:</b> ${o.client}</p>
                         <p><b>Dirección:</b> ${o.address}</p>
                         <p><b>Llevar:</b> ${o.description}</p>
                         ${o.notes ? `<div class="note-box"><b>📌 Notas:</b> ${o.notes}</div>` : ''}
@@ -910,7 +903,8 @@
         function updateOrderStatus(id, status) {
             db.ref(`orders/${id}`).update({ status, driver: loggedDriverName });
             if (loggedDriverName) {
-                db.ref(`driversLocation/${loggedDriverName}`).update({ status: status === 'En Ruta' ? 'En ruta' : 'En espera' });
+                let statusMap = status.includes('En Ruta') ? 'En ruta' : 'En espera';
+                db.ref(`driversLocation/${loggedDriverName}`).update({ status: statusMap });
             }
         }
 
@@ -924,7 +918,6 @@
 
         function abrirModalReporteIncidencia() { document.getElementById('modalIncidencia').style.display = 'flex'; }
         function cerrarModalReporteIncidencia() { document.getElementById('modalIncidencia').style.display = 'none'; }
-        
         function enviarReporteIncidencia(e) {
             e.preventDefault();
             db.ref('incidencias').push({
