@@ -386,6 +386,10 @@
             align-items: center;
             gap: 5px;
         }
+        .custom-icon {
+              background: transparent !important;
+              border: none !important;
+        }
     </style>
 </head>
 <body>
@@ -548,7 +552,7 @@
                         </div>
                     </div>
 
-                    <!-- PESTAÑA 2: MANDADOS Y ENCARGOS (CON PRECIO EDITABLE Y ASIGNACIÓN) -->
+                    <!-- PESTAÑA 2: MANDADOS Y PAQUETERIA (CON PRECIO EDITABLE Y ASIGNACIÓN) -->
                     <div id="gestorTabMandados" style="display: none;">
                         <div class="table-responsive">
                             <table>
@@ -796,7 +800,7 @@
             if (activeRole === 'conductor') renderConductorOrders();
         });
 
-        db.ref('encargos_mandados').on('value', (snapshot) => {
+        db.ref('paqueteria_mandados').on('value', (snapshot) => {
             const data = snapshot.val();
             mandados = [];
             if (data) {
@@ -1156,7 +1160,7 @@
             tbodyMandados.innerHTML = '';
 
             if (mandadosPendientes.length === 0) {
-                tbodyMandados.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#64748b; padding:1.5rem;">No hay mandados o encargos pendientes de despacho. 🛵</td></tr>`;
+                tbodyMandados.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#64748b; padding:1.5rem;">No hay mandados o paqueteria pendientes de despacho. 🛵</td></tr>`;
                 return;
             }
 
@@ -1211,7 +1215,7 @@
                 timestamp: Date.now(),
                 client: mandadoObj.clienteNombre,
                 address: `[Origen: ${mandadoObj.origen}] -> [Destino: ${mandadoObj.destino}]`,
-                restaurant: "ENCARGO / MANDADO",
+                restaurant: "PAQUETERIA / MANDADO",
                 description: mandadoObj.detalle,
                 notes: `Tel: ${mandadoObj.clienteTelefono} | Modalidad: ${mandadoObj.modalidad}`,
                 productPrice: 0,
@@ -1226,7 +1230,7 @@
             db.ref('orders').push(ordenConvertida);
             
             // 2. Marcamos el mandado como Asignado para removerlo de la lista de pendientes
-            db.ref(`encargos_mandados/${firebaseId}`).update({ estado: 'Asignado' });
+            db.ref(`paqueteria_mandados/${firebaseId}`).update({ estado: 'Asignado' });
 
             alert(`¡Mandado despachado con flete de Q${nuevoFlete.toFixed(2)} asignado a: ${conductorElegido}!`);
         }
@@ -1374,7 +1378,7 @@
 
             let driverAllOrders = orders.filter(o => o.driver === loggedDriverName || o.driver === 'TODOS');
 
-            let driverActiveOrders = driverAllOrders.filter(o => o.status !== 'Entregado');
+            let driverActiveOrders = driverAllOrders.filter(o => o.status === 'Aceptado' || o.status === 'En Ruta');
 
             let driverCompletedOrders = driverAllOrders.filter(o => {
                 if (o.status !== 'Entregado') return false;
