@@ -70,15 +70,12 @@
         .kpi-card h3 { font-size: 0.7rem; color: #64748b; margin-bottom: 0.3rem; text-transform: uppercase; }
         .kpi-card p { font-size: 1.2rem; font-weight: 700; color: var(--secondary); }
 
-        .dashboard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
-        @media (max-width: 900px) { .dashboard-grid { grid-template-columns: 1fr; } }
-
-        .card { background: var(--white); padding: 1.2rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .card { background: var(--white); padding: 1.2rem; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
         .card h2 { font-size: 1.1rem; margin-bottom: 1rem; color: var(--secondary); }
-        #map { width: 100%; height: 380px; border-radius: 8px; }
 
-        #mapCardContainer:fullscreen { width: 100vw !important; height: 100vh !important; background: #0f172a; padding: 20px; display: flex; flex-direction: column; justify-content: center; }
-        #mapCardContainer:fullscreen #map { height: 85vh !important; width: 100% !important; }
+        /* MODAL MAPA GRANDE */
+        #mapModal .modal-content { max-width: 900px; width: 95%; height: 80vh; display: flex; flex-direction: column; }
+        #map { width: 100%; flex-grow: 1; border-radius: 8px; min-height: 450px; }
 
         .table-responsive { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.85rem; }
@@ -114,11 +111,17 @@
         .form-group input, .form-group select, .form-group textarea { width: 100%; padding: 0.6rem; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
+        /* MARCADOR CON ETIQUETA Y TEXTO */
+        .driver-map-label {
+            background: #0f172a; color: #ffffff; padding: 3px 8px; border-radius: 6px;
+            font-size: 11px; font-weight: bold; white-space: nowrap; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            text-align: center; border: 1px solid rgba(255,255,255,0.2);
+        }
         .driver-triangle-marker {
-            width: 0; height: 0;
-            border-left: 10px solid transparent; border-right: 10px solid transparent;
-            border-bottom: 22px solid #f59e0b;
-            filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.4));
+            width: 0; height: 0; margin: 0 auto;
+            border-left: 8px solid transparent; border-right: 8px solid transparent;
+            border-bottom: 18px solid #f59e0b;
+            filter: drop-shadow(0px 2px 3px rgba(0,0,0,0.4));
         }
         .driver-triangle-marker.en-ruta { border-bottom-color: #059669; }
         .custom-icon { background: transparent !important; border: none !important; }
@@ -171,6 +174,20 @@
         </div>
     </div>
 
+    <!-- MODAL MAPA SATELITAL GRANDE -->
+    <div id="mapModal" class="modal">
+        <div class="modal-content">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                <h2 style="margin:0;">🗺️ Monitoreo Satelital de Flota en Tiempo Real</h2>
+                <div>
+                    <button class="btn btn-info" style="padding: 4px 10px; font-size: 0.75rem;" onclick="toggleMapFullscreen()">📺 Pantalla Completa</button>
+                    <span class="close" style="position:static; margin-left: 15px;" onclick="closeMapModal()">&times;</span>
+                </div>
+            </div>
+            <div id="map"></div>
+        </div>
+    </div>
+
     <!-- HEADER -->
     <div id="appHeader" class="app-header" style="display: none;">
         <div style="display: flex; align-items: center; gap: 12px;">
@@ -200,12 +217,13 @@
                         <option value="7days">Última Semana</option>
                         <option value="all">Historial Completo</option>
                     </select>
+                    <button class="btn btn-info" onclick="openMapModal()">🗺️ Abrir Mapa</button>
                     <button class="btn btn-success" onclick="downloadDailyCSV()">📥 Descargar CSV</button>
                     <button class="btn btn-primary" onclick="openOrderModal()">+ Crear Nueva Orden</button>
                 </div>
             </div>
 
-            <!-- CONTENEDOR DE ALERTAS / INCIDENCIAS -->
+            <!-- ALERTAS DE INCIDENCIAS -->
             <div id="gestorIncidenciasContainer" class="incidencias-alert-box">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <h3 style="color: #dc2626; font-size: 1rem;">⚠️ ALERTAS Y URGENCIAS EN RUTA</h3>
@@ -214,7 +232,7 @@
                 <div id="gestorIncidenciasList"></div>
             </div>
 
-            <!-- KPIS GESTOR (SEPARANDO RECOLECCIÓN Y ENTREGA) -->
+            <!-- KPIS GESTOR -->
             <div class="kpi-grid">
                 <div class="kpi-card"><h3>Envíos</h3><p id="kpiTotal">0</p></div>
                 <div class="kpi-card"><h3>Pendientes</h3><p id="kpiPendientes">0</p></div>
@@ -226,65 +244,87 @@
                 <div class="kpi-card" style="border-left-color: var(--accent);"><h3>Efectivo</h3><p id="kpiEfectivoMano">Q0.00</p></div>
             </div>
 
-            <div class="dashboard-grid">
-                <!-- MAPA DEL GESTOR (CON CAPA SATELITAL ESRI ORIGINAL) -->
-                <div class="card" id="mapCardContainer">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                        <h2 style="margin: 0;">🗺️ Monitoreo Satelital de Flota</h2>
-                        <button class="btn btn-info" style="padding: 4px 10px; font-size: 0.75rem;" onclick="toggleTVMode()">📺 Modo TV Mapa</button>
-                    </div>
-                    <div id="map"></div>
+            <!-- TABLAS DE GESTIÓN CATEGORIZADAS POR PESTAÑAS -->
+            <div class="card">
+                <input type="text" id="orderSearchInput" class="search-box-orders" placeholder="🔍 Buscar por #ID de orden o cliente..." oninput="filtrarOrdenesPorNum()">
+
+                <div class="driver-tabs">
+                    <button id="gestorTabNuevasBtn" class="driver-tab-btn active" onclick="switchGestorTab('nuevas')">🔔 Nuevas (<span id="countNuevasOrders">0</span>)</button>
+                    <button id="gestorTabRecogiendoBtn" class="driver-tab-btn" onclick="switchGestorTab('recogiendo')">🟠 Recogiendo (<span id="countRecogiendoOrders">0</span>)</button>
+                    <button id="gestorTabBodegaBtn" class="driver-tab-btn" onclick="switchGestorTab('bodega')">📦 En Bodega (<span id="countBodegaOrders">0</span>)</button>
+                    <button id="gestorTabEntregandoBtn" class="driver-tab-btn" onclick="switchGestorTab('entregando')">🔵 Entregando (<span id="countEntregandoOrders">0</span>)</button>
+                    <button id="gestorTabMandadosBtn" class="driver-tab-btn" onclick="switchGestorTab('mandados')">🛵 Solicitudes Mandado (<span id="countMandadosOrders">0</span>)</button>
+                    <button id="gestorTabRechazadosBtn" class="driver-tab-btn" onclick="switchGestorTab('rechazados')">❌ Rechazados</button>
+                    <button id="gestorTabTodasBtn" class="driver-tab-btn" onclick="switchGestorTab('todas')">📋 Historial</button>
                 </div>
 
-                <!-- GESTIÓN Y TABLAS -->
-                <div class="card">
-                    <input type="text" id="orderSearchInput" class="search-box-orders" placeholder="🔍 Buscar por #ID de orden o cliente..." oninput="filtrarOrdenesPorNum()">
-
-                    <div class="driver-tabs">
-                        <button id="gestorTabNuevasBtn" class="driver-tab-btn active" onclick="switchGestorTab('nuevas')">🔔 Nuevas (<span id="countNuevasOrders">0</span>)</button>
-                        <button id="gestorTabMandadosBtn" class="driver-tab-btn" onclick="switchGestorTab('mandados')">🛵 Mandados (<span id="countMandadosOrders">0</span>)</button>
-                        <button id="gestorTabRechazadosBtn" class="driver-tab-btn" onclick="switchGestorTab('rechazados')">❌ Rechazados (<span id="countRechazadosOrders">0</span>)</button>
-                        <button id="gestorTabTodasBtn" class="driver-tab-btn" onclick="switchGestorTab('todas')">📋 Historial</button>
+                <!-- NUEVAS -->
+                <div id="gestorTabNuevas">
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>ID / Cliente</th><th>Restaurante / Detalle</th><th>Flete / Conductor</th><th>Acción</th></tr></thead>
+                            <tbody id="newOrdersTableBody"></tbody>
+                        </table>
                     </div>
+                </div>
 
-                    <!-- NUEVAS -->
-                    <div id="gestorTabNuevas">
-                        <div class="table-responsive">
-                            <table>
-                                <thead><tr><th>ID / Cliente</th><th>Restaurante / Detalle</th><th>Flete / Conductor</th><th>Acción</th></tr></thead>
-                                <tbody id="newOrdersTableBody"></tbody>
-                            </table>
-                        </div>
+                <!-- RECOGIENDO -->
+                <div id="gestorTabRecogiendo" style="display: none;">
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>ID / Cliente</th><th>Origen / Detalle</th><th>Conductor Asignado</th><th>Estado</th></tr></thead>
+                            <tbody id="recogiendoTableBody"></tbody>
+                        </table>
                     </div>
+                </div>
 
-                    <!-- MANDADOS -->
-                    <div id="gestorTabMandados" style="display: none;">
-                        <div class="table-responsive">
-                            <table>
-                                <thead><tr><th>Código</th><th>Origen / Destino</th><th>Flete / Conductor</th><th>Acción</th></tr></thead>
-                                <tbody id="mandadosTableBody"></tbody>
-                            </table>
-                        </div>
+                <!-- BODEGA -->
+                <div id="gestorTabBodega" style="display: none;">
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>ID / Cliente</th><th>Detalle de Paquete</th><th>Conductor</th><th>Acción Rápida</th></tr></thead>
+                            <tbody id="bodegaTableBody"></tbody>
+                        </table>
                     </div>
+                </div>
 
-                    <!-- RECHAZADOS -->
-                    <div id="gestorTabRechazados" style="display: none;">
-                        <div class="table-responsive">
-                            <table>
-                                <thead><tr><th>#ID</th><th>Cliente</th><th>Conductor</th><th>Motivo</th></tr></thead>
-                                <tbody id="rechazadosTableBody"></tbody>
-                            </table>
-                        </div>
+                <!-- ENTREGANDO -->
+                <div id="gestorTabEntregando" style="display: none;">
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>ID / Cliente</th><th>Destino</th><th>Conductor</th><th>Estado Actual</th></tr></thead>
+                            <tbody id="entregandoTableBody"></tbody>
+                        </table>
                     </div>
+                </div>
 
-                    <!-- HISTORIAL -->
-                    <div id="gestorTabTodas" style="display: none;">
-                        <div class="table-responsive">
-                            <table>
-                                <thead><tr><th>ID</th><th>Cliente</th><th>Conductor</th><th>Total</th><th>Estado</th></tr></thead>
-                                <tbody id="ordersTableBody"></tbody>
-                            </table>
-                        </div>
+                <!-- MANDADOS -->
+                <div id="gestorTabMandados" style="display: none;">
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>Código</th><th>Origen / Destino</th><th>Flete / Conductor</th><th>Acción</th></tr></thead>
+                            <tbody id="mandadosTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- RECHAZADOS -->
+                <div id="gestorTabRechazados" style="display: none;">
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>#ID</th><th>Cliente</th><th>Conductor</th><th>Motivo</th></tr></thead>
+                            <tbody id="rechazadosTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- HISTORIAL -->
+                <div id="gestorTabTodas" style="display: none;">
+                    <div class="table-responsive">
+                        <table>
+                            <thead><tr><th>ID</th><th>Cliente</th><th>Conductor</th><th>Total</th><th>Estado</th></tr></thead>
+                            <tbody id="ordersTableBody"></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -295,25 +335,34 @@
             <div class="card" style="margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
                 <div>
                     <h2 style="margin: 0;" id="conductorWelcomeTitle">Rutas de Conductor</h2>
-                    <p style="font-size: 0.85rem; color: #64748b;">Monitoreo de entregas y métricas:</p>
+                    <p style="font-size: 0.85rem; color: #64748b;">Gestión de entregas y bodega:</p>
                 </div>
                 <button class="btn btn-warning" onclick="abrirModalReporteIncidencia()">⚠️ Reportar Problema</button>
             </div>
 
-            <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
-                <div class="kpi-card" style="border-left-color: var(--primary);"><h3>✅ Entregados</h3><p id="driverKpiCompleted">0</p></div>
+            <div class="kpi-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+                <div class="kpi-card" style="border-left-color: var(--primary);"><h3>✅ Entregados Hoy</h3><p id="driverKpiCompleted">0</p></div>
+                <div class="kpi-card" style="border-left-color: #7e22ce;"><h3>📦 En Bodega</h3><p id="driverKpiBodega">0</p></div>
                 <div class="kpi-card" style="border-left-color: var(--info);"><h3>🛣️ Distancia</h3><p id="driverKpiDistance">0.0 km</p></div>
             </div>
 
             <div class="driver-tabs">
                 <button id="tabActivasBtn" class="driver-tab-btn active" onclick="switchDriverTab('activas')">📦 Envíos Activos</button>
+                <button id="tabBodegaBtn" class="driver-tab-btn" onclick="switchDriverTab('bodega')">🏷️ Mi Bodega / Almacén</button>
                 <button id="tabHistorialBtn" class="driver-tab-btn" onclick="switchDriverTab('historial')">📋 Historial</button>
             </div>
 
+            <!-- ACTIVOS -->
             <div id="driverTabActivas">
                 <div id="conductorOrdersContainer" class="driver-orders-grid"></div>
             </div>
 
+            <!-- BODEGA CONDUCTOR -->
+            <div id="driverTabBodega" style="display: none;">
+                <div id="conductorBodegaContainer" class="driver-orders-grid"></div>
+            </div>
+
+            <!-- HISTORIAL CONDUCTOR -->
             <div id="driverTabHistorial" style="display: none;">
                 <div class="card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
@@ -514,7 +563,7 @@
             if (role === 'gestor') {
                 document.getElementById('userRoleBadge').textContent = 'Sesión: Gestor 🖥️';
                 document.getElementById('gestorSection').classList.add('active');
-                setTimeout(() => { initMap(); updateGestorView(); renderMandadosGestor(); renderGestorIncidencias(); }, 200);
+                setTimeout(() => { updateGestorView(); renderMandadosGestor(); renderGestorIncidencias(); }, 200);
             } else {
                 document.getElementById('userRoleBadge').textContent = `Conductor: ${loggedDriverName} 📱`;
                 document.getElementById('conductorWelcomeTitle').textContent = `Rutas de ${loggedDriverName}`;
@@ -524,30 +573,38 @@
             }
         }
 
-        function switchDriverTab(tab) {
-            document.getElementById('tabActivasBtn').classList.toggle('active', tab === 'activas');
-            document.getElementById('tabHistorialBtn').classList.toggle('active', tab === 'historial');
-            document.getElementById('driverTabActivas').style.display = tab === 'activas' ? 'block' : 'none';
-            document.getElementById('driverTabHistorial').style.display = tab === 'historial' ? 'block' : 'none';
+        function openMapModal() {
+            document.getElementById('mapModal').style.display = 'flex';
+            setTimeout(() => { initMap(); }, 250);
         }
+        function closeMapModal() { document.getElementById('mapModal').style.display = 'none'; }
 
-        function switchGestorTab(tab) {
-            ['Nuevas', 'Mandados', 'Rechazados', 'Todas'].forEach(t => {
-                let el = document.getElementById('gestorTab' + t);
-                let btn = document.getElementById('gestorTab' + t + 'Btn');
-                if (el) el.style.display = t.toLowerCase() === tab ? 'block' : 'none';
-                if (btn) btn.classList.toggle('active', t.toLowerCase() === tab);
-            });
-        }
-
-        function toggleTVMode() {
-            let container = document.getElementById('mapCardContainer');
+        function toggleMapFullscreen() {
+            let container = document.querySelector('#mapModal .modal-content');
             if (!document.fullscreenElement) {
                 if (container.requestFullscreen) container.requestFullscreen();
             } else {
                 if (document.exitFullscreen) document.exitFullscreen();
             }
             setTimeout(() => { if (map) map.invalidateSize(); }, 300);
+        }
+
+        function switchDriverTab(tab) {
+            document.getElementById('tabActivasBtn').classList.toggle('active', tab === 'activas');
+            document.getElementById('tabBodegaBtn').classList.toggle('active', tab === 'bodega');
+            document.getElementById('tabHistorialBtn').classList.toggle('active', tab === 'historial');
+            document.getElementById('driverTabActivas').style.display = tab === 'activas' ? 'block' : 'none';
+            document.getElementById('driverTabBodega').style.display = tab === 'bodega' ? 'block' : 'none';
+            document.getElementById('driverTabHistorial').style.display = tab === 'historial' ? 'block' : 'none';
+        }
+
+        function switchGestorTab(tab) {
+            ['Nuevas', 'Recogiendo', 'Bodega', 'Entregando', 'Mandados', 'Rechazados', 'Todas'].forEach(t => {
+                let el = document.getElementById('gestorTab' + t);
+                let btn = document.getElementById('gestorTab' + t.charAt(0).toUpperCase() + t.slice(1) + 'Btn') || document.getElementById('gestorTab' + t + 'Btn');
+                if (el) el.style.display = t.toLowerCase() === tab.toLowerCase() ? 'block' : 'none';
+                if (btn) btn.classList.toggle('active', t.toLowerCase() === tab.toLowerCase());
+            });
         }
 
         function startLocationTracking() {
@@ -577,7 +634,6 @@
         function initMap() {
             if (!map) {
                 map = L.map('map').setView(NUEVA_SANTA_ROSA_COORDS, 14);
-                // Restauramos la capa Satelital ESRI que tenías al principio
                 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
                     maxZoom: 19,
                     attribution: 'Tiles &copy; Esri'
@@ -596,7 +652,13 @@
                 let info = driversLocation[name];
                 if (!info.lat || !info.lng) continue;
                 let isRuta = info.status && info.status.includes('En Ruta');
-                let icon = L.divIcon({ className: 'custom-icon', html: `<div class="driver-triangle-marker ${isRuta ? 'en-ruta' : ''}"></div>` });
+                let iconHtml = `
+                    <div style="display:flex; flex-direction:column; align-items:center;">
+                        <div class="driver-map-label">${name}<br><span style="color:#38bdf8;">${info.status || 'En espera'}</span></div>
+                        <div class="driver-triangle-marker ${isRuta ? 'en-ruta' : ''}"></div>
+                    </div>
+                `;
+                let icon = L.divIcon({ className: 'custom-icon', html: iconHtml, iconSize: [120, 45], iconAnchor: [60, 45] });
                 markers[name] = L.marker([info.lat, info.lng], { icon }).addTo(map).bindPopup(`<b>${name}</b><br>Estado: ${info.status}`);
             }
         }
@@ -662,28 +724,27 @@
                 }
             });
 
-            let km = 0;
-            for (let d in driversLocation) km += (driversLocation[d].distanceKm || 0);
-
             document.getElementById('kpiFletesRecaudados').textContent = `Q${fletes.toFixed(2)}`;
             document.getElementById('kpiEfectivoMano').textContent = `Q${efectivo.toFixed(2)}`;
-            document.getElementById('kpiKmTotal').textContent = `${km.toFixed(1)} km`;
 
             renderNuevasGestor(filtered);
+            renderRecogiendoGestor(filtered);
+            renderBodegaGestor(filtered);
+            renderEntregandoGestor(filtered);
             renderRechazadosGestor(filtered);
             renderHistorialGestor(filtered);
-            updateMapMarkers();
+            if (map) updateMapMarkers();
         }
 
         function renderNuevasGestor(filtered) {
             let tbody = document.getElementById('newOrdersTableBody');
             let count = document.getElementById('countNuevasOrders');
-            let nuevas = filtered.filter(o => o.status === 'Pendiente');
+            let nuevas = filtered.filter(o => o.status === 'Pendiente' || o.status === 'Aceptado');
             count.textContent = nuevas.length;
             tbody.innerHTML = '';
 
             if (nuevas.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#64748b; padding:1.5rem;">No hay órdenes pendientes. 👍</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#64748b; padding:1.5rem;">No hay órdenes nuevas o pendientes. 👍</td></tr>`;
                 return;
             }
 
@@ -701,7 +762,7 @@
                             <option value="José Morales">José Morales</option>
                         </select>
                     </td>
-                    <td><button class="btn btn-success" style="font-size:0.75rem; width:100%;" onclick="confirmarOrden('${o.firebaseId}')">✅ Confirmar</button></td>
+                    <td><button class="btn btn-success" style="font-size:0.75rem; width:100%;" onclick="confirmarOrden('${o.firebaseId}')">✅ Asignar</button></td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -711,7 +772,63 @@
             let f = parseFloat(document.getElementById(`flete-${id}`).value) || 20;
             let d = document.getElementById(`driver-${id}`).value;
             db.ref(`orders/${id}`).update({ shippingPrice: f, driver: d, status: 'Aceptado' });
-            alert("Orden confirmada.");
+            alert("Orden asignada correctamente.");
+        }
+
+        function renderRecogiendoGestor(filtered) {
+            let tbody = document.getElementById('recogiendoTableBody');
+            let count = document.getElementById('countRecogiendoOrders');
+            let list = filtered.filter(o => o.status === 'En Ruta: Recogiendo');
+            count.textContent = list.length;
+            tbody.innerHTML = '';
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#64748b; padding:1.5rem;">No hay motoristas recogiendo pedidos.</td></tr>`;
+                return;
+            }
+            list.forEach(o => {
+                let tr = document.createElement('tr');
+                tr.innerHTML = `<td><b>#${o.id}</b><br>${o.client}</td><td><b>${o.restaurant}</b><br><small>${o.description}</small></td><td>${o.driver}</td><td><span class="badge badge-recoleccion">En Recolección</span></td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderBodegaGestor(filtered) {
+            let tbody = document.getElementById('bodegaTableBody');
+            let count = document.getElementById('countBodegaOrders');
+            let list = filtered.filter(o => o.status === 'En Bodega');
+            count.textContent = list.length;
+            tbody.innerHTML = '';
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#64748b; padding:1.5rem;">No hay paquetes almacenados en bodega.</td></tr>`;
+                return;
+            }
+            list.forEach(o => {
+                let tr = document.createElement('tr');
+                tr.innerHTML = `<td><b>#${o.id}</b><br>${o.client}</td><td>${o.description}</td><td>${o.driver}</td><td><button class="btn btn-info" style="font-size:0.75rem;" onclick="forzarSalidaBodega('${o.firebaseId}')">🚀 Forzar Salida a Ruta</button></td>`;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function forzarSalidaBodega(id) {
+            db.ref(`orders/${id}`).update({ status: 'En Ruta: Entregando' });
+            alert("Orden sacada de bodega e ingresada a ruta de entrega.");
+        }
+
+        function renderEntregandoGestor(filtered) {
+            let tbody = document.getElementById('entregandoTableBody');
+            let count = document.getElementById('countEntregandoOrders');
+            let list = filtered.filter(o => o.status === 'En Ruta: Entregando');
+            count.textContent = list.length;
+            tbody.innerHTML = '';
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#64748b; padding:1.5rem;">No hay entregas en ruta hacia el cliente.</td></tr>`;
+                return;
+            }
+            list.forEach(o => {
+                let tr = document.createElement('tr');
+                tr.innerHTML = `<td><b>#${o.id}</b><br>${o.client}</td><td><small>${o.address}</small></td><td>${o.driver}</td><td><span class="badge badge-entrega">En Ruta de Entrega</span></td>`;
+                tbody.appendChild(tr);
+            });
         }
 
         function renderMandadosGestor() {
@@ -764,16 +881,13 @@
                 productPrice: 0, productCollect: 'no', shippingPrice: f, payer: 'cliente', driver: d, status: 'Aceptado'
             });
             db.ref(`paqueteria_mandados/${id}`).update({ estado: 'Asignado' });
-            alert("Mandado despachado.");
+            alert("Mandado despachado al sistema de órdenes.");
         }
 
         function renderRechazadosGestor(filtered) {
             let tbody = document.getElementById('rechazadosTableBody');
-            let count = document.getElementById('countRechazadosOrders');
             let rech = filtered.filter(o => o.status === 'Rechazado');
-            count.textContent = rech.length;
             tbody.innerHTML = '';
-
             rech.forEach(o => {
                 let tr = document.createElement('tr');
                 tr.innerHTML = `<td><b>#${o.id}</b></td><td>${o.client}</td><td>${o.driver || 'N/A'}</td><td><span class="badge badge-rechazado">${o.motivoRechazo || 'Rechazado'}</span></td>`;
@@ -785,8 +899,9 @@
             let tbody = document.getElementById('ordersTableBody');
             tbody.innerHTML = '';
             filtered.slice().reverse().forEach(o => {
+                let badgeClass = o.status === 'Entregado' ? 'badge-entregado' : 'badge-aceptado';
                 let tr = document.createElement('tr');
-                tr.innerHTML = `<td><b>#${o.id}</b></td><td>${o.client}</td><td>${o.driver || 'N/A'}</td><td>Q${(o.shippingPrice||0).toFixed(2)}</td><td><span class="badge badge-aceptado">${o.status}</span></td>`;
+                tr.innerHTML = `<td><b>#${o.id}</b></td><td>${o.client}</td><td>${o.driver || 'N/A'}</td><td>Q${(o.shippingPrice||0).toFixed(2)}</td><td><span class="badge ${badgeClass}">${o.status}</span></td>`;
                 tbody.appendChild(tr);
             });
         }
@@ -802,17 +917,20 @@
             document.body.removeChild(link);
         }
 
-        // CONDUCTOR CON LOS NUEVOS ESTADOS DE RECOLECCIÓN, BODEGA Y ENTREGA
+        // VISTA CONDUCTOR (CON PESTAÑA DEDICADA DE BODEGA)
         function renderConductorOrders() {
             let containerActivas = document.getElementById('conductorOrdersContainer');
+            let containerBodega = document.getElementById('conductorBodegaContainer');
             let containerCompleted = document.getElementById('conductorCompletedContainer');
-            containerActivas.innerHTML = ''; containerCompleted.innerHTML = '';
+            containerActivas.innerHTML = ''; containerBodega.innerHTML = ''; containerCompleted.innerHTML = '';
 
             let filterRange = document.getElementById('driverHistoryFilter')?.value || '7days';
             let todayStr = getTodayString(), now = Date.now(), ms = 86400000;
 
             let driverAll = orders.filter(o => o.driver === loggedDriverName || o.driver === 'TODOS');
-            let activas = driverAll.filter(o => o.status !== 'Entregado' && o.status !== 'Rechazado');
+            let activas = driverAll.filter(o => (o.status === 'Aceptado' || o.status === 'En Ruta: Recogiendo' || o.status === 'En Ruta: Entregando'));
+            let enBodega = driverAll.filter(o => o.status === 'En Bodega');
+            
             let completadas = driverAll.filter(o => {
                 if (o.status !== 'Entregado') return false;
                 let t = o.timestamp || new Date(o.date).getTime() || 0;
@@ -824,10 +942,12 @@
 
             let km = driversLocation[loggedDriverName]?.distanceKm || 0;
             document.getElementById('driverKpiCompleted').textContent = completadas.length;
+            document.getElementById('driverKpiBodega').textContent = enBodega.length;
             document.getElementById('driverKpiDistance').textContent = `${km.toFixed(1)} km`;
 
+            // RENDER ACTIVAS
             if (activas.length === 0) {
-                containerActivas.innerHTML = `<div class="card" style="grid-column: 1/-1; text-align:center; padding: 2rem;"><p>No hay órdenes activas. 👍</p></div>`;
+                containerActivas.innerHTML = `<div class="card" style="grid-column: 1/-1; text-align:center; padding: 2rem;"><p>No hay envíos activos en este momento. 👍</p></div>`;
             } else {
                 activas.forEach(o => {
                     let linksMatch = o.address.match(/(https?:\/\/maps\.google\.com[^\s\]]+)/g);
@@ -839,13 +959,12 @@
                         });
                     }
 
-                    let statusBadge = `<span class="badge badge-aceptado">${o.status || 'Aceptado'}</span>`;
+                    let statusBadge = `<span class="badge badge-aceptado">${o.status}</span>`;
                     if (o.status === 'En Ruta: Recogiendo') statusBadge = `<span class="badge badge-recoleccion">🟡 En Ruta (Recogiendo)</span>`;
-                    if (o.status === 'En Bodega') statusBadge = `<span class="badge badge-bodega">📦 Almacenado en Bodega</span>`;
                     if (o.status === 'En Ruta: Entregando') statusBadge = `<span class="badge badge-entrega">🔵 En Ruta (Entregando)</span>`;
 
                     let actionBtn = '';
-                    if (o.status === 'Aceptado' || !o.status) {
+                    if (o.status === 'Aceptado') {
                         actionBtn = `
                             <div style="display:flex; gap:6px; flex-wrap:wrap;">
                                 <button class="btn btn-info" style="flex:1; font-size:0.8rem;" onclick="updateOrderStatus('${o.firebaseId}', 'En Ruta: Recogiendo')">🛵 1. Ir a Recoger</button>
@@ -858,10 +977,6 @@
                                 <button class="btn btn-warning" style="flex:1; font-size:0.8rem; color:#fff;" onclick="updateOrderStatus('${o.firebaseId}', 'En Bodega')">📦 2. Dejar en Bodega</button>
                                 <button class="btn btn-info" style="flex:1; font-size:0.8rem;" onclick="updateOrderStatus('${o.firebaseId}', 'En Ruta: Entregando')">🚀 Directo a Entregar</button>
                             </div>
-                        `;
-                    } else if (o.status === 'En Bodega') {
-                        actionBtn = `
-                            <button class="btn btn-primary btn-block" style="font-size:0.85rem;" onclick="updateOrderStatus('${o.firebaseId}', 'En Ruta: Entregando')">🚀 Sacar de Bodega / Iniciar Ruta de Entrega</button>
                         `;
                     } else if (o.status === 'En Ruta: Entregando') {
                         actionBtn = `
@@ -891,6 +1006,32 @@
                 });
             }
 
+            // RENDER BODEGA CONDUCTOR
+            if (enBodega.length === 0) {
+                containerBodega.innerHTML = `<div class="card" style="grid-column: 1/-1; text-align:center; padding: 2rem;"><p>No tienes paquetes guardados en bodega. 📦</p></div>`;
+            } else {
+                enBodega.forEach(o => {
+                    let card = document.createElement('div');
+                    card.className = 'driver-card';
+                    card.style.borderTopColor = "#7e22ce";
+                    card.innerHTML = `
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <h3 style="margin:0;">Orden #${o.id}</h3>
+                            <span class="badge badge-bodega">📦 Almacenado en Bodega</span>
+                        </div>
+                        <p><b>Cliente:</b> ${o.client}</p>
+                        <p><b>Destino:</b> ${o.address}</p>
+                        <p><b>Paquete:</b> ${o.description}</p>
+                        ${o.notes ? `<div class="note-box"><b>📌 Notas:</b> ${o.notes}</div>` : ''}
+                        <div style="margin-top: 12px;">
+                            <button class="btn btn-primary btn-block" style="font-size:0.85rem;" onclick="updateOrderStatus('${o.firebaseId}', 'En Ruta: Entregando')">🚀 Sacar de Bodega / Iniciar Ruta de Entrega</button>
+                        </div>
+                    `;
+                    containerBodega.appendChild(card);
+                });
+            }
+
+            // RENDER HISTORIAL
             completadas.slice().reverse().forEach(o => {
                 let item = document.createElement('div');
                 item.className = 'card';
